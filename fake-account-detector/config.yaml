@@ -1,0 +1,15 @@
+seed: 42
+validation_size: 0.2
+positive_label: 1
+negative_label: 0
+data:
+  fake_train: data/raw/fake_users training.xlsx
+  real_train: data/raw/real_users training.xlsx
+  test: data/raw/merged testing.xlsx
+  prediction_output: predictions.xlsx
+model:
+  artifact: models/fake_account_pipeline.joblib
+  selection_results: reports/model_selection.json
+  results: reports/model_results.json
+  metrics_plot: reports/evaluation_metrics.png
+
