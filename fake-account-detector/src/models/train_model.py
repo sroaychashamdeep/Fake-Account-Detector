@@ -33,8 +33,14 @@ def _classifiers(seed: int) -> dict[str, Any]:
             max_iter=2000, class_weight="balanced", random_state=seed,
         ),
         "random_forest": RandomForestClassifier(
-            n_estimators=400, min_samples_leaf=2, class_weight="balanced_subsample",
-            n_jobs=-1, random_state=seed,
+            n_estimators=500,
+            max_depth=16,
+            min_samples_split=4,
+            min_samples_leaf=2,
+            max_features="sqrt",
+            class_weight="balanced_subsample",
+            n_jobs=-1,
+            random_state=seed,
         ),
     }
 

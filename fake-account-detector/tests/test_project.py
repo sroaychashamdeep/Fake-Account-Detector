@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
+import numpy as np
 
 from src.data.load_data import load_training_data, validate_feature_schema
-from src.features.build_features import AccountFeatureBuilder, REQUIRED_INPUT_COLUMNS
+from src.features.build_features import (
+    AccountFeatureBuilder, REQUIRED_INPUT_COLUMNS,
+    ALL_NUMERIC_COLUMNS, ENGINEERED_NUMERIC_COLUMNS
+)
 from src.models.predict_model import predict_file
 from src.models.train_model import train_and_select
 
@@ -54,6 +58,49 @@ def test_feature_builder_handles_optional_and_malformed_values():
     assert pd.isna(features.loc[1, "statuses_count"])
     assert "account_age_days" not in features
     assert "lang" in features and features["lang"].isna().all()
+    # Check that all engineered features are present
+    for col in ENGINEERED_NUMERIC_COLUMNS:
+        assert col in features.columns
+
+
+def test_feature_builder_column_normalization():
+    # User provides non-standard column headers
+    user_frame = pd.DataFrame({
+        "Followers": [1000],
+        "Following": [250],
+        "Posts": [400],
+        "Likes": [800],
+        "Listed": [5],
+        "Default Avatar": [0],
+        "Default Theme": [0],
+    })
+    features = AccountFeatureBuilder().fit_transform(user_frame)
+    assert features.loc[0, "followers_count"] == 1000
+    assert features.loc[0, "friends_count"] == 250
+    assert features.loc[0, "statuses_count"] == 400
+    assert features.loc[0, "favourites_count"] == 800
+    assert features.loc[0, "listed_count"] == 5
+    # Verify calculated ratios
+    expected_ratio = 1000 / (250 + 1.0)
+    assert np.isclose(features.loc[0, "follower_friend_ratio"], expected_ratio)
+
+
+def test_feature_builder_zero_division_safety():
+    # Accounts with zeroes across the board
+    zero_frame = pd.DataFrame([{
+        "followers_count": 0,
+        "friends_count": 0,
+        "statuses_count": 0,
+        "favourites_count": 0,
+        "listed_count": 0,
+    }])
+    features = AccountFeatureBuilder().fit_transform(zero_frame)
+    assert not features["follower_friend_ratio"].isna().any()
+    assert not np.isinf(features["follower_friend_ratio"]).any()
+    assert features.loc[0, "follower_friend_ratio"] == 0.0
+    assert features.loc[0, "reputation_score"] == 0.0
+    assert features.loc[0, "zero_favourites"] == 1.0
+    assert features.loc[0, "zero_statuses"] == 1.0
 
 
 def test_training_and_prediction_share_pipeline_and_preserve_input(tmp_path):

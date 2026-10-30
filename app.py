@@ -3,12 +3,8 @@ import sys
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from decimal import Decimal
-
-try:
-    from dotenv import load_dotenv
-    load_dotenv(Path(__file__).resolve().parent / ".env")
-except Exception:
-    pass
+import io
+import json
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
@@ -18,12 +14,19 @@ from pydantic import BaseModel, Field
 import joblib
 import numpy as np
 import pandas as pd
-import io
+
+# Safe local environment loading
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent / ".env")
+except Exception:
+    pass
 
 # Ensure fake-account-detector source is on sys.path
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = BASE_DIR / "fake-account-detector"
-sys.path.insert(0, str(PROJECT_DIR))
+if str(PROJECT_DIR) not in sys.path:
+    sys.path.insert(0, str(PROJECT_DIR))
 
 # Pipeline path
 MODEL_PATH = PROJECT_DIR / "models" / "fake_account_pipeline.joblib"
@@ -31,7 +34,7 @@ MODEL_PATH = PROJECT_DIR / "models" / "fake_account_pipeline.joblib"
 app = FastAPI(
     title="Fake Account Detector AI",
     description="Machine Learning Web Interface for detecting fake social media profiles",
-    version="1.0.0"
+    version="1.2.0"
 )
 
 app.add_middleware(
@@ -78,16 +81,18 @@ class AccountInput(BaseModel):
 
 def evaluate_behavioral_flags(data: Dict[str, Any], fake_prob: float) -> List[Dict[str, str]]:
     flags = []
-    followers = data.get("followers_count", 0)
-    friends = data.get("friends_count", 0)
-    statuses = data.get("statuses_count", 0)
-    favourites = data.get("favourites_count", 0)
-    default_img = data.get("default_profile_image", 0)
-    default_prof = data.get("default_profile", 0)
-    verified = data.get("verified", 0)
+    
+    # Safe float conversions preventing TypeErrors on dirty string inputs
+    followers = float(pd.to_numeric(data.get("followers_count", 0), errors="coerce") or 0)
+    friends = float(pd.to_numeric(data.get("friends_count", 0), errors="coerce") or 0)
+    statuses = float(pd.to_numeric(data.get("statuses_count", 0), errors="coerce") or 0)
+    favourites = float(pd.to_numeric(data.get("favourites_count", 0), errors="coerce") or 0)
+    default_img = int(pd.to_numeric(data.get("default_profile_image", 0), errors="coerce") or 0)
+    default_prof = int(pd.to_numeric(data.get("default_profile", 0), errors="coerce") or 0)
+    verified = int(pd.to_numeric(data.get("verified", 0), errors="coerce") or 0)
 
     # Ratio analysis
-    ratio = followers / max(friends, 1)
+    ratio = followers / max(friends, 1.0)
     if friends > 500 and ratio < 0.05:
         flags.append({
             "type": "danger",
@@ -98,7 +103,7 @@ def evaluate_behavioral_flags(data: Dict[str, Any], fake_prob: float) -> List[Di
         flags.append({
             "type": "success",
             "title": "Healthy Follower Ratio",
-            "desc": f"More followers ({int(followers)}) than followed accounts ({int(friends)})."
+            "desc": f"More followers ({int(followers):,}) than followed accounts ({int(friends):,})."
         })
 
     # Avatar check
@@ -175,9 +180,9 @@ def predict_account(account: AccountInput):
 
         flags = evaluate_behavioral_flags(row, fake_prob)
 
-        followers = row.get("followers_count", 0)
-        friends = row.get("friends_count", 0)
-        ff_ratio = round(followers / max(friends, 1), 3)
+        followers = float(row.get("followers_count", 0))
+        friends = float(row.get("friends_count", 0))
+        ff_ratio = round(followers / max(friends, 1.0), 3)
 
         return {
             "is_fake": pred,
@@ -272,7 +277,7 @@ def scan_instagram(req: InstagramScanRequest):
             verdict = "Authentic Real User"
 
         flags = evaluate_behavioral_flags(model_input, fake_prob)
-        ratio = round(followers / max(following, 1), 3)
+        ratio = round(followers / max(following, 1.0), 3)
 
         return {
             "profile": {
@@ -306,8 +311,11 @@ def scan_instagram(req: InstagramScanRequest):
 
 @app.post("/api/batch-predict")
 async def batch_predict(file: UploadFile = File(...)):
-    filename = file.filename or ""
+    filename = (file.filename or "").lower()
     content = await file.read()
+
+    if not content:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     try:
         if filename.endswith(".csv"):
@@ -317,6 +325,11 @@ async def batch_predict(file: UploadFile = File(...)):
         else:
             raise HTTPException(status_code=400, detail="Only .csv and .xlsx files are supported.")
 
+        # Clean empty rows
+        df = df.dropna(how="all").reset_index(drop=True)
+        if len(df) == 0:
+            raise HTTPException(status_code=400, detail="Dataset contains no data rows.")
+
         model = get_pipeline()
         preds = model.predict(df)
         probs = model.predict_proba(df)
@@ -325,8 +338,7 @@ async def batch_predict(file: UploadFile = File(...)):
         df["fake_probability_%"] = np.round(probs[:, 1] * 100, 2)
         df["real_probability_%"] = np.round(probs[:, 0] * 100, 2)
 
-        import json
-        clean_sample = json.loads(df.head(15).to_json(orient="records", date_format="iso"))
+        clean_sample = json.loads(df.head(20).to_json(orient="records", date_format="iso"))
 
         summary = {
             "total_accounts": len(df),
@@ -337,17 +349,20 @@ async def batch_predict(file: UploadFile = File(...)):
         }
         return JSONResponse(content=summary)
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Batch processing error: {str(e)}")
 
 
 @app.get("/api/health")
 def health_check():
-    _ = get_pipeline()
+    pipe = get_pipeline()
+    classifier = pipe.named_steps.get("classifier") if hasattr(pipe, "named_steps") else pipe
     return {
         "status": "healthy",
         "model_loaded": True,
-        "model_type": "RandomForestClassifier",
+        "model_type": type(classifier).__name__,
         "pipeline_path": str(MODEL_PATH)
     }
 
@@ -363,7 +378,6 @@ def index_page():
 
 if __name__ == "__main__":
     import uvicorn
-    # Pre-load pipeline
     get_pipeline()
     print("Starting server on http://localhost:8000")
     uvicorn.run(app, host="127.0.0.1", port=8000)
