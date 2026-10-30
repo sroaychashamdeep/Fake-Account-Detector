@@ -4,8 +4,11 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 from decimal import Decimal
 
-from dotenv import load_dotenv
-load_dotenv(Path(__file__).resolve().parent / ".env")
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent / ".env")
+except Exception:
+    pass
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse

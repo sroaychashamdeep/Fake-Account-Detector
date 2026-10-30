@@ -8,6 +8,6 @@ data/processed/*
 !data/processed/.gitkeep
 models/*
 !models/.gitkeep
+!models/fake_account_pipeline.joblib
 reports/*.png
 reports/*.json
-

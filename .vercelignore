@@ -1,0 +1,14 @@
+.venv
+venv
+ENV
+__pycache__
+*.pyc
+*.xlsx
+*.csv
+fake-account-detector/data/**
+fake-account-detector/reports/**
+fake-account-detector/tests/**
+*.bat
+app_streamlit.py
+README.md
+apify_agents.md
