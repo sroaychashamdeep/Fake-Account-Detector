@@ -9,7 +9,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 
@@ -19,10 +19,9 @@ from src.features.build_features import REQUIRED_INPUT_COLUMNS, build_feature_pi
 
 
 EXCLUDED_COLUMNS = {
-    TARGET, "id", "name", "screen_name", "url", "profile_image_url",
-    "profile_image_url_https", "profile_banner_url",
+    TARGET, "id", "profile_image_url", "profile_image_url_https",
     "profile_background_image_url", "profile_background_image_url_https",
-    "description", "location", "created_at", "updated", "dataset", "RAND", "random_order",
+    "updated", "dataset", "RAND", "random_order",
 }
 
 
@@ -30,15 +29,27 @@ def _classifiers(seed: int) -> dict[str, Any]:
     return {
         "dummy": DummyClassifier(strategy="most_frequent"),
         "logistic_regression": LogisticRegression(
-            max_iter=2000, class_weight="balanced", random_state=seed,
+            C=1.0, max_iter=2000, class_weight="balanced", random_state=seed,
         ),
         "random_forest": RandomForestClassifier(
-            n_estimators=500,
+            n_estimators=450,
             max_depth=16,
-            min_samples_split=4,
-            min_samples_leaf=2,
+            criterion="entropy",
+            min_samples_split=3,
+            min_samples_leaf=1,
             max_features="sqrt",
             class_weight="balanced_subsample",
+            n_jobs=-1,
+            random_state=seed,
+        ),
+        "extra_trees": ExtraTreesClassifier(
+            n_estimators=450,
+            max_depth=16,
+            criterion="entropy",
+            min_samples_split=3,
+            min_samples_leaf=1,
+            max_features="sqrt",
+            class_weight="balanced",
             n_jobs=-1,
             random_state=seed,
         ),
@@ -85,7 +96,7 @@ def train_and_select(
     model_destination, results_destination = Path(model_path), Path(results_path)
     model_destination.parent.mkdir(parents=True, exist_ok=True)
     results_destination.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(final_pipeline, model_destination)
+    joblib.dump(final_pipeline, model_destination, compress=3)
     result = {
         "selection_basis": "stratified validation split from combined training sources; test file not used",
         "seed": seed,

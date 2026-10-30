@@ -9,7 +9,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, RobustScaler
 
 BASE_NUMERIC_COLUMNS = [
     "statuses_count", "followers_count", "friends_count", "favourites_count",
@@ -36,7 +36,26 @@ ENGINEERED_NUMERIC_COLUMNS = [
     "high_following_low_followers",
 ]
 
-ALL_NUMERIC_COLUMNS = BASE_NUMERIC_COLUMNS + ENGINEERED_NUMERIC_COLUMNS
+METADATA_NUMERIC_COLUMNS = [
+    "has_profile_banner",
+    "has_external_url",
+    "has_description",
+    "description_length",
+    "description_digits_count",
+    "has_location",
+    "screen_name_length",
+    "screen_name_digits_count",
+    "screen_name_digits_ratio",
+    "name_length",
+    "name_digits_count",
+    "name_eq_screen_name",
+    "account_age_days",
+    "statuses_per_day",
+    "followers_per_day",
+    "friends_per_day",
+]
+
+ALL_NUMERIC_COLUMNS = BASE_NUMERIC_COLUMNS + ENGINEERED_NUMERIC_COLUMNS + METADATA_NUMERIC_COLUMNS
 
 CATEGORICAL_COLUMNS = [
     "lang", "time_zone", "profile_text_color", "profile_sidebar_border_color",
@@ -73,6 +92,17 @@ COLUMN_NORMALIZATION_MAP = {
     "is_private": "protected",
     "private": "protected",
     "language": "lang",
+    "bio": "description",
+    "biography": "description",
+    "username": "screen_name",
+    "user_name": "screen_name",
+    "handle": "screen_name",
+    "full_name": "name",
+    "display_name": "name",
+    "website": "url",
+    "external_url": "url",
+    "banner": "profile_banner_url",
+    "header_image": "profile_banner_url",
 }
 
 
@@ -131,6 +161,72 @@ class AccountFeatureBuilder(BaseEstimator, TransformerMixin):
         out["zero_statuses"] = (statuses == 0).astype(float)
         out["high_following_low_followers"] = ((friends > 500) & (out["follower_friend_ratio"] < 0.05)).astype(float)
 
+        # Profile metadata signals
+        if "profile_banner_url" in frame:
+            out["has_profile_banner"] = frame["profile_banner_url"].notna().astype(float)
+        else:
+            out["has_profile_banner"] = np.nan
+
+        if "url" in frame:
+            url_str = frame["url"].astype(str).str.strip().str.lower()
+            out["has_external_url"] = (~frame["url"].isna() & ~url_str.isin(["0", "nan", "none", "", "false"])).astype(float)
+        else:
+            out["has_external_url"] = np.nan
+
+        if "description" in frame:
+            desc = frame["description"].fillna("").astype(str)
+            out["has_description"] = (desc.str.strip().str.len() > 0).astype(float)
+            out["description_length"] = desc.str.len().astype(float)
+            out["description_digits_count"] = desc.str.count(r"\d").astype(float)
+        else:
+            out["has_description"] = np.nan
+            out["description_length"] = np.nan
+            out["description_digits_count"] = np.nan
+
+        if "location" in frame:
+            loc = frame["location"].fillna("").astype(str)
+            out["has_location"] = (loc.str.strip().str.len() > 0).astype(float)
+        else:
+            out["has_location"] = np.nan
+
+        # Screen name & Display name forensic signals
+        if "screen_name" in frame:
+            sn = frame["screen_name"].fillna("").astype(str)
+            out["screen_name_length"] = sn.str.len().astype(float)
+            digits = sn.str.count(r"\d").astype(float)
+            out["screen_name_digits_count"] = digits
+            out["screen_name_digits_ratio"] = digits / (out["screen_name_length"] + 1.0)
+        else:
+            sn = pd.Series("", index=frame.index)
+            out["screen_name_length"] = np.nan
+            out["screen_name_digits_count"] = np.nan
+            out["screen_name_digits_ratio"] = np.nan
+
+        if "name" in frame:
+            nm = frame["name"].fillna("").astype(str)
+            out["name_length"] = nm.str.len().astype(float)
+            out["name_digits_count"] = nm.str.count(r"\d").astype(float)
+            out["name_eq_screen_name"] = (nm.str.lower() == sn.str.lower()).astype(float)
+        else:
+            out["name_length"] = np.nan
+            out["name_digits_count"] = np.nan
+            out["name_eq_screen_name"] = np.nan
+
+        # Account creation age & publishing velocity
+        if "created_at" in frame:
+            dates = pd.to_datetime(frame["created_at"], format="%a %b %d %H:%M:%S +0000 %Y", errors="coerce")
+            ref_date = pd.Timestamp("2016-01-01")
+            age_days = (ref_date - dates).dt.total_seconds() / (24 * 3600)
+            out["account_age_days"] = age_days.clip(lower=1)
+            out["statuses_per_day"] = statuses / (out["account_age_days"] + 1.0)
+            out["followers_per_day"] = followers / (out["account_age_days"] + 1.0)
+            out["friends_per_day"] = friends / (out["account_age_days"] + 1.0)
+        else:
+            out["account_age_days"] = np.nan
+            out["statuses_per_day"] = np.nan
+            out["followers_per_day"] = np.nan
+            out["friends_per_day"] = np.nan
+
         # Categoricals
         for column in CATEGORICAL_COLUMNS:
             values = frame[column].astype("string") if column in frame else pd.Series(pd.NA, index=frame.index, dtype="string")
@@ -143,7 +239,7 @@ class AccountFeatureBuilder(BaseEstimator, TransformerMixin):
 def build_preprocessor() -> ColumnTransformer:
     numeric = Pipeline([
         ("imputer", SimpleImputer(strategy="median", add_indicator=True, keep_empty_features=True)),
-        ("scaler", StandardScaler()),
+        ("scaler", RobustScaler()),
     ])
     categorical = Pipeline([
         ("imputer", SimpleImputer(strategy="constant", fill_value="__MISSING__", keep_empty_features=True)),

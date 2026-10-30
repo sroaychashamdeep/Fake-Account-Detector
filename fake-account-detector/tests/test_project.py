@@ -56,7 +56,7 @@ def test_feature_builder_handles_optional_and_malformed_values():
     features = AccountFeatureBuilder().fit_transform(frame)
     assert features.loc[0, "statuses_count"] == 12
     assert pd.isna(features.loc[1, "statuses_count"])
-    assert "account_age_days" not in features
+    assert "account_age_days" in features and pd.isna(features.loc[0, "account_age_days"])
     assert "lang" in features and features["lang"].isna().all()
     # Check that all engineered features are present
     for col in ENGINEERED_NUMERIC_COLUMNS:

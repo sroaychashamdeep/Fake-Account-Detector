@@ -78,6 +78,15 @@ class AccountInput(BaseModel):
     time_zone: Optional[str] = Field(default=None, description="Timezone string")
     utc_offset: Optional[float] = Field(default=0.0, description="UTC offset in seconds")
 
+    # Optional metadata & profile signals
+    name: Optional[str] = Field(default=None, description="Display name")
+    screen_name: Optional[str] = Field(default=None, description="Username handle")
+    description: Optional[str] = Field(default=None, description="Account bio")
+    location: Optional[str] = Field(default=None, description="Location text")
+    url: Optional[str] = Field(default=None, description="Profile link or URL")
+    profile_banner_url: Optional[str] = Field(default=None, description="Header banner image URL")
+    created_at: Optional[str] = Field(default=None, description="Account creation timestamp")
+
 
 def evaluate_behavioral_flags(data: Dict[str, Any], fake_prob: float) -> List[Dict[str, str]]:
     flags = []
@@ -256,7 +265,11 @@ def scan_instagram(req: InstagramScanRequest):
             "verified": verified,
             "protected": protected,
             "profile_use_background_image": 1,
-            "lang": "en"
+            "lang": "en",
+            "name": prof.get("fullName", ""),
+            "screen_name": prof.get("username", clean_user),
+            "description": prof.get("biography", ""),
+            "url": prof.get("externalUrl") or (prof.get("externalUrls")[0] if isinstance(prof.get("externalUrls"), list) and prof.get("externalUrls") else None),
         }
 
         model = get_pipeline()
