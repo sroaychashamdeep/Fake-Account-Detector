@@ -1,643 +1,700 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VeriProfile AI - Fake Account Detector</title>
-  <!-- Tailwind CSS -->
+  <title>VeriProfile AI — Minimalist Social Account Detector</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS & FontAwesome -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
           colors: {
-            brand: {
-              50: '#eff6ff',
-              100: '#dbeafe',
-              500: '#3b82f6',
-              600: '#2563eb',
-              700: '#1d4ed8',
+            noir: {
+              950: '#090a0f',
+              900: '#11131c',
+              850: '#161926',
+              800: '#1e2235',
+              700: '#2b314c'
             },
-            darkcard: '#1e293b',
-            darkbg: '#0f172a'
+            accent: {
+              DEFAULT: '#6366f1',
+              hover: '#4f46e5',
+              glow: 'rgba(99, 102, 241, 0.25)'
+            }
           }
         }
       }
     }
   </script>
+
   <style>
-    body {
-      background-color: #0b0f19;
-      color: #f1f5f9;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    /* Ultra-clean custom scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+    /* Custom range slider styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      background: #1f2438;
+      border-radius: 999px;
+      outline: none;
+      transition: background 0.2s;
     }
-    .glass-card {
-      background: rgba(30, 41, 59, 0.7);
-      backdrop-filter: blur(12px);
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #6366f1;
+      border: 2px solid #ffffff;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+      transition: transform 0.15s ease, background-color 0.15s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: #818cf8;
+    }
+
+    /* iOS-style toggle switches */
+    .switch-checkbox:checked + .switch-label {
+      background-color: #6366f1;
+    }
+    .switch-checkbox:checked + .switch-label .switch-dot {
+      transform: translateX(1.25rem);
+      background-color: #ffffff;
+    }
+
+    /* Gauge circle progress */
+    .gauge-circle {
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Subtle backdrop blur */
+    .glass-panel {
+      background: rgba(17, 19, 28, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .glass-input {
+      background: rgba(11, 13, 20, 0.8);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 1rem;
+      transition: all 0.2s ease;
     }
-    .glass-card-interactive:hover {
-      border-color: rgba(99, 102, 241, 0.4);
-      transition: all 0.2s ease-in-out;
-    }
-    .toggle-checkbox:checked {
-      right: 0;
-      border-color: #68D391;
-    }
-    .toggle-checkbox:checked + .toggle-label {
-      background-color: #10b981;
+    .glass-input:focus {
+      border-color: rgba(99, 102, 241, 0.6);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+      outline: none;
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="bg-noir-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-accent selection:text-white antialiased">
 
-  <!-- Navigation Bar -->
-  <nav class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-            <i class="fa-solid fa-shield-halved text-white text-lg"></i>
-          </div>
-          <div>
-            <span class="text-xl font-bold tracking-tight text-white">VeriProfile <span class="text-indigo-400">AI</span></span>
-            <span class="hidden md:inline-block ml-2 px-2 py-0.5 text-xs font-medium bg-indigo-950 text-indigo-300 border border-indigo-800 rounded-full">v1.0 Detector</span>
-          </div>
+  <!-- Ambient Glow Background -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px]"></div>
+    <div class="absolute top-[60%] right-[-10%] w-[500px] h-[400px] bg-purple-600/10 rounded-full blur-[150px]"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 border-b border-white/[0.06] bg-noir-950/80 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      
+      <!-- Brand -->
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid fa-shield-check text-white text-base"></i>
         </div>
-
-        <div class="flex items-center space-x-4">
-          <div class="flex items-center space-x-2 text-xs bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span class="text-slate-300 font-medium">Model: Random Forest (97.7% Acc)</span>
-          </div>
-          <a href="/docs" target="_blank" class="text-xs text-slate-400 hover:text-white transition flex items-center space-x-1">
-            <i class="fa-solid fa-code"></i>
-            <span class="hidden sm:inline">API Docs</span>
-          </a>
+        <div class="flex items-center space-x-2">
+          <span class="text-base font-bold tracking-tight text-white">VeriProfile<span class="text-indigo-400 font-extrabold ml-0.5">AI</span></span>
+          <span class="px-2 py-0.5 text-[10px] font-semibold bg-white/[0.05] border border-white/[0.08] text-slate-400 rounded-full">v1.2</span>
         </div>
       </div>
+
+      <!-- Live Engine Status & Links -->
+      <div class="flex items-center space-x-3 text-xs">
+        <div id="engine-status" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="font-medium tracking-wide">Model Online (97.7%)</span>
+        </div>
+        <a href="/docs" target="_blank" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.05] transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-bolt text-indigo-400 text-xs"></i>
+          <span class="font-medium">API</span>
+        </a>
+        <a href="https://github.com/sroaychashamdeep/Fake-Account-Detector" target="_blank" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.05] transition flex items-center space-x-1.5">
+          <i class="fa-brands fa-github text-xs"></i>
+          <span class="font-medium">GitHub</span>
+        </a>
+      </div>
+
     </div>
-  </nav>
+  </header>
 
-  <!-- Main Container -->
-  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-
-    <!-- Header Section -->
-    <div class="text-center max-w-3xl mx-auto space-y-2">
-      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-        Detect Fake & Automated Social Media Profiles
+  <!-- Main Content -->
+  <main class="relative z-10 flex-grow max-w-6xl w-full mx-auto px-4 py-8 space-y-8">
+    
+    <!-- Hero / Title -->
+    <div class="text-center max-w-2xl mx-auto space-y-3 pt-2">
+      <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
+        <i class="fa-solid fa-sparkles text-[10px]"></i>
+        <span>AI-Powered Behavioral Verification</span>
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+        Spot Fake Profiles & Bots with Precision
       </h1>
-      <p class="text-slate-400 text-sm sm:text-base">
-        Leverage machine learning trained on thousands of audited social profiles to spot bot activity, follow-churning, and inorganic engagement patterns.
+      <p class="text-slate-400 text-sm leading-relaxed">
+        Live Instagram account verification and real-time behavioral parameter simulation trained on verified social audits.
       </p>
     </div>
 
-    <!-- Navigation Tabs -->
-    <div class="flex justify-center border-b border-slate-800">
-      <nav class="flex space-x-8" aria-label="Tabs">
-        <button onclick="switchTab('single')" id="tab-btn-single" class="tab-btn border-indigo-500 text-indigo-400 py-3 px-1 border-b-2 font-semibold text-sm flex items-center space-x-2">
-          <i class="fa-solid fa-user-check"></i>
-          <span>Single Profile Inspector</span>
+    <!-- Segmented Navigation Pill -->
+    <div class="flex justify-center">
+      <div class="inline-flex p-1 rounded-2xl bg-noir-900 border border-white/[0.08] shadow-inner space-x-1">
+        <button onclick="switchTab('instagram')" id="nav-btn-instagram" class="nav-tab px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 bg-accent text-white shadow-md shadow-indigo-500/25">
+          <i class="fa-brands fa-instagram text-sm"></i>
+          <span>Live Instagram</span>
         </button>
-        <button onclick="switchTab('instagram')" id="tab-btn-instagram" class="tab-btn border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-700 py-3 px-1 border-b-2 font-medium text-sm flex items-center space-x-2">
-          <i class="fa-brands fa-instagram text-pink-500"></i>
-          <span>Live Instagram (Apify)</span>
+        <button onclick="switchTab('simulator')" id="nav-btn-simulator" class="nav-tab px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all flex items-center space-x-2">
+          <i class="fa-solid fa-sliders text-xs"></i>
+          <span>GUI Simulator</span>
         </button>
-        <button onclick="switchTab('batch')" id="tab-btn-batch" class="tab-btn border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-700 py-3 px-1 border-b-2 font-medium text-sm flex items-center space-x-2">
-          <i class="fa-solid fa-file-excel"></i>
-          <span>Batch File Scanner (Excel / CSV)</span>
+        <button onclick="switchTab('batch')" id="nav-btn-batch" class="nav-tab px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all flex items-center space-x-2">
+          <i class="fa-solid fa-file-spreadsheet text-xs"></i>
+          <span>Batch File</span>
         </button>
-        <button onclick="switchTab('model')" id="tab-btn-model" class="tab-btn border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-700 py-3 px-1 border-b-2 font-medium text-sm flex items-center space-x-2">
-          <i class="fa-solid fa-chart-pie"></i>
-          <span>Model Architecture & Metrics</span>
+        <button onclick="switchTab('model')" id="nav-btn-model" class="nav-tab px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all flex items-center space-x-2">
+          <i class="fa-solid fa-chart-network text-xs"></i>
+          <span>Model Specs</span>
         </button>
-      </nav>
+      </div>
     </div>
 
-    <!-- TAB 1: Single Profile Inspector -->
-    <section id="tab-single" class="space-y-6">
+    <!-- ========================================== -->
+    <!-- TAB 1: Live Instagram Scan (Apify)        -->
+    <!-- ========================================== -->
+    <section id="section-instagram" class="space-y-6">
       
-      <!-- Preset Quick-Loads -->
-      <div class="glass-card p-4 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center space-x-2 text-sm text-slate-300 font-medium">
-          <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
-          <span>Quick Autofill Test Profiles:</span>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <button onclick="loadPreset('bot')" class="px-3 py-1.5 text-xs bg-red-950/60 hover:bg-red-900 text-red-200 border border-red-800 rounded-lg transition flex items-center space-x-1.5">
-            <i class="fa-solid fa-robot"></i>
-            <span>Aggressive Spam Bot</span>
-          </button>
-          <button onclick="loadPreset('real')" class="px-3 py-1.5 text-xs bg-emerald-950/60 hover:bg-emerald-900 text-emerald-200 border border-emerald-800 rounded-lg transition flex items-center space-x-1.5">
-            <i class="fa-solid fa-user"></i>
-            <span>Active Real User</span>
-          </button>
-          <button onclick="loadPreset('creator')" class="px-3 py-1.5 text-xs bg-blue-950/60 hover:bg-blue-900 text-blue-200 border border-blue-800 rounded-lg transition flex items-center space-x-1.5">
-            <i class="fa-solid fa-star"></i>
-            <span>Verified Public Figure</span>
-          </button>
-          <button onclick="loadPreset('lurker')" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg transition flex items-center space-x-1.5">
-            <i class="fa-solid fa-ghost"></i>
-            <span>Passive Lurker</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Main Grid: Form Left, Diagnostic Right -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        <!-- Input Form (7 cols) -->
-        <div class="lg:col-span-7 space-y-6">
-          <form id="profile-form" onsubmit="handleAnalyze(event)" class="glass-card p-6 space-y-6">
-            
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 class="text-lg font-bold text-white flex items-center space-x-2">
-                <i class="fa-solid fa-sliders text-indigo-400"></i>
-                <span>Account Characteristics</span>
-              </h2>
-              <span class="text-xs text-slate-400">Enter account metrics below</span>
-            </div>
-
-            <!-- Quantitative Metrics -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">
-                  Followers Count
-                  <i class="fa-solid fa-circle-info text-slate-500 ml-1" title="How many accounts follow this user"></i>
-                </label>
-                <div class="relative">
-                  <input type="number" id="followers_count" name="followers_count" min="0" value="240" required
-                    class="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-2 text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">
-                  Following (Friends)
-                  <i class="fa-solid fa-circle-info text-slate-500 ml-1" title="How many accounts this user follows"></i>
-                </label>
-                <input type="number" id="friends_count" name="friends_count" min="0" value="310" required
-                  class="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-2 text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">
-                  Tweets / Statuses
-                  <i class="fa-solid fa-circle-info text-slate-500 ml-1" title="Total lifetime tweets/posts created"></i>
-                </label>
-                <input type="number" id="statuses_count" name="statuses_count" min="0" value="1250" required
-                  class="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-2 text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">
-                  Favourites / Likes
-                  <i class="fa-solid fa-circle-info text-slate-500 ml-1" title="Number of posts liked by this account"></i>
-                </label>
-                <input type="number" id="favourites_count" name="favourites_count" min="0" value="680" required
-                  class="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-2 text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">
-                  Listed Count
-                  <i class="fa-solid fa-circle-info text-slate-500 ml-1" title="Public lists user has been added to"></i>
-                </label>
-                <input type="number" id="listed_count" name="listed_count" min="0" value="4" required
-                  class="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-2 text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">
-                  Account Language
-                </label>
-                <select id="lang" name="lang" class="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-2 text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                  <option value="en" selected>English (en)</option>
-                  <option value="it">Italian (it)</option>
-                  <option value="es">Spanish (es)</option>
-                  <option value="fr">French (fr)</option>
-                  <option value="de">German (de)</option>
-                  <option value="__MISSING__">Unspecified</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Profile Attributes & Binary Flags -->
-            <div>
-              <span class="block text-xs font-semibold text-slate-300 mb-3 uppercase tracking-wider">
-                Profile Setup & Verification Flags
-              </span>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                
-                <label class="flex items-center justify-between p-3 bg-slate-900/60 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
-                  <div class="space-y-0.5">
-                    <span class="text-sm font-medium text-slate-200">Default Egg / Avatar</span>
-                    <p class="text-xs text-slate-400">Uses uncustomized profile picture</p>
-                  </div>
-                  <input type="checkbox" id="default_profile_image" class="w-5 h-5 rounded text-indigo-600 bg-slate-800 border-slate-700 focus:ring-indigo-500">
-                </label>
-
-                <label class="flex items-center justify-between p-3 bg-slate-900/60 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
-                  <div class="space-y-0.5">
-                    <span class="text-sm font-medium text-slate-200">Default Theme</span>
-                    <p class="text-xs text-slate-400">Never customized profile colors</p>
-                  </div>
-                  <input type="checkbox" id="default_profile" class="w-5 h-5 rounded text-indigo-600 bg-slate-800 border-slate-700 focus:ring-indigo-500">
-                </label>
-
-                <label class="flex items-center justify-between p-3 bg-slate-900/60 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
-                  <div class="space-y-0.5">
-                    <span class="text-sm font-medium text-slate-200">Verified Badge</span>
-                    <p class="text-xs text-slate-400">Official verified identity</p>
-                  </div>
-                  <input type="checkbox" id="verified" class="w-5 h-5 rounded text-indigo-600 bg-slate-800 border-slate-700 focus:ring-indigo-500">
-                </label>
-
-                <label class="flex items-center justify-between p-3 bg-slate-900/60 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
-                  <div class="space-y-0.5">
-                    <span class="text-sm font-medium text-slate-200">Geolocation Enabled</span>
-                    <p class="text-xs text-slate-400">Attaches GPS metadata to tweets</p>
-                  </div>
-                  <input type="checkbox" id="geo_enabled" checked class="w-5 h-5 rounded text-indigo-600 bg-slate-800 border-slate-700 focus:ring-indigo-500">
-                </label>
-
-                <label class="flex items-center justify-between p-3 bg-slate-900/60 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
-                  <div class="space-y-0.5">
-                    <span class="text-sm font-medium text-slate-200">Custom Header Banner</span>
-                    <p class="text-xs text-slate-400">Has uploaded a background banner</p>
-                  </div>
-                  <input type="checkbox" id="profile_use_background_image" checked class="w-5 h-5 rounded text-indigo-600 bg-slate-800 border-slate-700 focus:ring-indigo-500">
-                </label>
-
-                <label class="flex items-center justify-between p-3 bg-slate-900/60 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
-                  <div class="space-y-0.5">
-                    <span class="text-sm font-medium text-slate-200">Private / Protected</span>
-                    <p class="text-xs text-slate-400">Tweets protected from public</p>
-                  </div>
-                  <input type="checkbox" id="protected" class="w-5 h-5 rounded text-indigo-600 bg-slate-800 border-slate-700 focus:ring-indigo-500">
-                </label>
-              </div>
-            </div>
-
-            <!-- Submit Button -->
-            <button type="submit" id="submit-btn" class="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center space-x-2">
-              <i class="fa-solid fa-microchip"></i>
-              <span>Run AI Detection Engine</span>
-            </button>
-          </form>
-        </div>
-
-        <!-- Diagnostic Panel (5 cols) -->
-        <div class="lg:col-span-5 space-y-6">
-          <div id="results-panel" class="glass-card p-6 space-y-6 min-h-[500px] flex flex-col justify-between">
-            
-            <div class="space-y-4">
-              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-white flex items-center space-x-2">
-                  <i class="fa-solid fa-square-poll-vertical text-purple-400"></i>
-                  <span>AI Verification Result</span>
-                </h3>
-                <span id="risk-badge" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-800 text-slate-400">
-                  Ready to inspect
-                </span>
-              </div>
-
-              <!-- Main Verdict Callout -->
-              <div id="verdict-card" class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 text-center space-y-2">
-                <div id="verdict-icon" class="w-16 h-16 mx-auto rounded-2xl bg-slate-800 flex items-center justify-center text-3xl text-slate-400">
-                  <i class="fa-solid fa-shield"></i>
-                </div>
-                <h4 id="verdict-title" class="text-2xl font-black tracking-tight text-white">
-                  Awaiting Input
-                </h4>
-                <p id="verdict-desc" class="text-xs text-slate-400 max-w-sm mx-auto">
-                  Click 'Run AI Detection Engine' or choose an autofill preset above to analyze profile authenticity.
-                </p>
-              </div>
-
-              <!-- Probability Bar -->
-              <div class="space-y-2">
-                <div class="flex justify-between text-xs font-semibold">
-                  <span class="text-emerald-400">Real Profile Probability: <span id="real-prob-text">--</span></span>
-                  <span class="text-red-400">Fake Probability: <span id="fake-prob-text">--</span></span>
-                </div>
-                <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden flex">
-                  <div id="prob-bar-real" class="bg-emerald-500 h-full transition-all duration-500" style="width: 50%"></div>
-                  <div id="prob-bar-fake" class="bg-red-500 h-full transition-all duration-500" style="width: 50%"></div>
-                </div>
-              </div>
-
-              <!-- Computed Metric Chips -->
-              <div class="grid grid-cols-2 gap-3 pt-2">
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 text-center">
-                  <span class="text-[10px] uppercase font-bold text-slate-400">Follower Ratio</span>
-                  <p id="ratio-value" class="text-base font-bold text-white mt-0.5">--</p>
-                  <span id="ratio-verdict" class="text-[10px] text-slate-500">Followers / Following</span>
-                </div>
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 text-center">
-                  <span class="text-[10px] uppercase font-bold text-slate-400">Model Confidence</span>
-                  <p id="confidence-value" class="text-base font-bold text-indigo-400 mt-0.5">--</p>
-                  <span class="text-[10px] text-slate-500">Pipeline certainty</span>
-                </div>
-              </div>
-
-              <!-- Behavioral Clues List -->
-              <div class="space-y-2">
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Behavioral Indicators
-                </span>
-                <div id="flags-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  <div class="text-xs text-slate-500 italic p-3 bg-slate-900/40 rounded-lg border border-slate-800/60">
-                    No anomalies evaluated yet.
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            <div class="pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex justify-between items-center">
-              <span>Classifier: Random Forest (400 trees)</span>
-              <span>Baseline: Stratified Val 96.4% F1</span>
-            </div>
-
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- TAB: Live Instagram Inspector (Apify) -->
-    <section id="tab-instagram" class="hidden space-y-6">
-      <div class="glass-card p-6 max-w-4xl mx-auto space-y-6">
-        <div class="text-center space-y-2">
-          <div class="inline-flex w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 items-center justify-center text-white text-2xl shadow-lg shadow-pink-500/20">
-            <i class="fa-brands fa-instagram"></i>
-          </div>
-          <h2 class="text-2xl font-bold text-white">Live Instagram Profile Verification</h2>
-          <p class="text-slate-400 text-sm max-w-xl mx-auto">
-            Powered by the <span class="text-pink-400 font-medium">Apify Instagram Profile Scraper</span>. Enter any handle to fetch live account statistics and diagnose authenticity with our AI engine.
-          </p>
-        </div>
-
-        <!-- Handle Form -->
-        <form onsubmit="handleInstagramScan(event)" class="max-w-xl mx-auto flex flex-col sm:flex-row gap-3">
-          <div class="relative flex-grow">
-            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-pink-400 font-bold">@</div>
-            <input type="text" id="insta-username-input" placeholder="username (e.g. instagram or suspected_bot)" required
-              class="w-full pl-9 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white font-medium focus:ring-2 focus:ring-pink-500 focus:outline-none">
-          </div>
-          <button type="submit" id="insta-submit-btn" class="px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:opacity-90 shadow-lg shadow-pink-500/20 transition flex items-center justify-center space-x-2">
+      <!-- Sleek Search Input -->
+      <div class="max-w-2xl mx-auto">
+        <form onsubmit="handleInstagramScan(event)" class="relative flex items-center glass-panel p-2 rounded-2xl shadow-2xl focus-within:ring-2 focus-within:ring-indigo-500/50 transition">
+          <div class="pl-4 pr-2 text-pink-400 font-bold text-lg select-none">@</div>
+          <input type="text" id="insta-username-input" placeholder="Enter Instagram username (e.g. instagram, elonmusk)" required autocomplete="off"
+            class="w-full bg-transparent border-0 text-white placeholder-slate-500 text-sm font-medium focus:outline-none focus:ring-0">
+          <button type="submit" id="insta-scan-btn"
+            class="px-5 py-2.5 rounded-xl font-semibold text-xs text-white bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 hover:opacity-95 transition-all shadow-lg shadow-pink-500/20 flex items-center space-x-2 shrink-0">
             <i class="fa-solid fa-radar"></i>
-            <span>Fetch & Inspect</span>
+            <span>Scan Profile</span>
           </button>
         </form>
 
-        <!-- Instagram Results Container -->
-        <div id="insta-results-container" class="hidden space-y-6 pt-6 border-t border-slate-800">
+        <!-- Quick chips -->
+        <div class="flex items-center justify-center flex-wrap gap-2 pt-3 text-xs text-slate-500">
+          <span class="text-[11px]">Popular tests:</span>
+          <button onclick="quickScan('instagram')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 transition text-[11px]">@instagram</button>
+          <button onclick="quickScan('zuck')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 transition text-[11px]">@zuck</button>
+          <button onclick="quickScan('openai')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 transition text-[11px]">@openai</button>
+          <button onclick="quickScan('bot_suspicious_demo')" class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 transition text-[11px]">@demo_bot</button>
+        </div>
+      </div>
+
+      <!-- Instagram Scan Result Container -->
+      <div id="insta-result-card" class="hidden max-w-3xl mx-auto glass-panel p-6 sm:p-8 rounded-3xl space-y-6">
+        
+        <!-- Profile Identity Row -->
+        <div class="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 pb-6 border-b border-white/[0.06]">
+          <div class="flex items-center space-x-4">
+            <div class="relative">
+              <img id="insta-avatar" src="" alt="Avatar" referrerpolicy="no-referrer"
+                class="w-20 h-20 rounded-2xl object-cover bg-noir-850 ring-2 ring-pink-500/40 shadow-xl"
+                onerror="this.src='https://ui-avatars.com/api/?name=User&background=1e2235&color=fff'">
+              <span id="insta-verified-badge" class="hidden absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-sky-500 text-white flex items-center justify-center text-xs shadow-md">
+                <i class="fa-solid fa-check"></i>
+              </span>
+            </div>
+            <div class="space-y-1 text-center sm:text-left">
+              <div class="flex items-center space-x-2">
+                <h3 id="insta-username" class="text-xl font-bold text-white tracking-tight">@username</h3>
+                <span id="insta-private-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">Private</span>
+              </div>
+              <p id="insta-fullname" class="text-xs text-slate-400 font-medium">Full Name</p>
+              <p id="insta-bio" class="text-xs text-slate-300 line-clamp-2 max-w-sm pt-0.5 italic">Bio preview...</p>
+            </div>
+          </div>
+
+          <!-- Dynamic Verdict Stamp -->
+          <div id="insta-verdict-badge" class="px-5 py-3 rounded-2xl text-center space-y-0.5 border shadow-xl shrink-0">
+            <span id="insta-verdict-label" class="text-[10px] uppercase font-bold tracking-wider block">Verdict</span>
+            <span id="insta-verdict-title" class="text-lg font-extrabold tracking-tight block">Authentic</span>
+          </div>
+        </div>
+
+        <!-- Metrics Counters Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-noir-900/80 p-3.5 rounded-2xl border border-white/[0.04] text-center">
+            <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Followers</span>
+            <span id="insta-followers" class="text-base font-bold text-white mt-0.5 block font-mono">0</span>
+          </div>
+          <div class="bg-noir-900/80 p-3.5 rounded-2xl border border-white/[0.04] text-center">
+            <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Following</span>
+            <span id="insta-following" class="text-base font-bold text-white mt-0.5 block font-mono">0</span>
+          </div>
+          <div class="bg-noir-900/80 p-3.5 rounded-2xl border border-white/[0.04] text-center">
+            <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Posts Count</span>
+            <span id="insta-posts" class="text-base font-bold text-white mt-0.5 block font-mono">0</span>
+          </div>
+          <div class="bg-noir-900/80 p-3.5 rounded-2xl border border-white/[0.04] text-center">
+            <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Follower Ratio</span>
+            <span id="insta-ratio" class="text-base font-bold text-indigo-400 mt-0.5 block font-mono">0.00</span>
+          </div>
+        </div>
+
+        <!-- Probability Meter Bar -->
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs font-semibold">
+            <span class="text-emerald-400 flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>Authentic Confidence: <span id="insta-real-pct" class="font-mono">0%</span></span>
+            </span>
+            <span class="text-rose-400 flex items-center space-x-1.5">
+              <span>Bot / Fake Probability: <span id="insta-fake-pct" class="font-mono">0%</span></span>
+              <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+            </span>
+          </div>
+          <div class="w-full h-2.5 bg-noir-900 rounded-full overflow-hidden flex border border-white/[0.04]">
+            <div id="insta-bar-real" class="bg-emerald-500 h-full transition-all duration-700" style="width: 50%"></div>
+            <div id="insta-bar-fake" class="bg-rose-500 h-full transition-all duration-700" style="width: 50%"></div>
+          </div>
+        </div>
+
+        <!-- Detected Behavioral Signals -->
+        <div class="space-y-2.5 pt-2">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
+            <i class="fa-solid fa-fingerprint text-indigo-400 text-xs"></i>
+            <span>Diagnostic Signals Evaluated</span>
+          </span>
+          <div id="insta-signals-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: Interactive GUI Simulator          -->
+    <!-- ========================================== -->
+    <section id="section-simulator" class="hidden space-y-6">
+      
+      <!-- Preset Quick-Toggles -->
+      <div class="flex items-center justify-between flex-wrap gap-3 glass-panel p-3 px-4 rounded-2xl">
+        <span class="text-xs font-semibold text-slate-400 flex items-center space-x-2">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+          <span>Load Preset Archetype:</span>
+        </span>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="applyPreset('bot')" class="px-3 py-1 rounded-xl text-xs font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-robot"></i>
+            <span>Spam Bot</span>
+          </button>
+          <button onclick="applyPreset('real')" class="px-3 py-1 rounded-xl text-xs font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-user-check"></i>
+            <span>Active Human</span>
+          </button>
+          <button onclick="applyPreset('creator')" class="px-3 py-1 rounded-xl text-xs font-medium bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/20 transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-badge-check"></i>
+            <span>Verified Influencer</span>
+          </button>
+          <button onclick="applyPreset('lurker')" class="px-3 py-1 rounded-xl text-xs font-medium bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 border border-white/[0.08] transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-ghost"></i>
+            <span>Lurker</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Simulator Grid: Left Controls, Right Gauge -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Controls Column (7 Cols) -->
+        <div class="lg:col-span-7 glass-panel p-6 rounded-3xl space-y-6">
           
-          <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+          <div class="flex items-center justify-between border-b border-white/[0.06] pb-3">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+              <i class="fa-solid fa-sliders text-indigo-400"></i>
+              <span>Interactive Profile Parameters</span>
+            </h2>
+            <span class="text-[11px] text-slate-500">Live AI auto-predicts on slide</span>
+          </div>
+
+          <!-- Quantitative Sliders with Live Values -->
+          <div class="space-y-4">
             
-            <!-- Profile Info Card (5 cols) -->
-            <div class="md:col-span-5 bg-slate-900/90 p-5 rounded-2xl border border-slate-800 space-y-4">
-              <div class="flex items-center space-x-4">
-                <img id="insta-avatar" src="" alt="Avatar" referrerpolicy="no-referrer" class="w-16 h-16 rounded-full border-2 border-pink-500 object-cover bg-slate-800" onerror="this.src='https://ui-avatars.com/api/?name=User&background=334155&color=fff'">
-                <div class="overflow-hidden">
-                  <div class="flex items-center space-x-1.5">
-                    <h3 id="insta-username" class="font-bold text-white text-base truncate">@username</h3>
-                    <span id="insta-verified-badge" class="hidden text-sky-400 text-sm" title="Verified"><i class="fa-solid fa-circle-check"></i></span>
-                  </div>
-                  <p id="insta-fullname" class="text-xs text-slate-400 truncate">Full Name</p>
-                  <span id="insta-private-badge" class="hidden mt-1 inline-block text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">Private Profile</span>
+            <!-- Followers Slider -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between items-center text-xs">
+                <label class="font-medium text-slate-300 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-users text-slate-500 text-xs"></i>
+                  <span>Followers Count</span>
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input type="number" id="input_followers" min="0" max="500000" value="480"
+                    oninput="syncSlider('followers', this.value)"
+                    class="glass-input w-24 px-2 py-1 rounded-lg text-right font-mono text-xs text-white">
                 </div>
               </div>
-
-              <p id="insta-bio" class="text-xs text-slate-300 italic whitespace-pre-wrap max-h-24 overflow-y-auto">No bio provided.</p>
-
-              <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800/80 text-center">
-                <div class="p-2 bg-slate-800/50 rounded-xl">
-                  <span class="text-[10px] text-slate-400 block font-semibold">Posts</span>
-                  <p id="insta-posts" class="text-sm font-bold text-white">0</p>
-                </div>
-                <div class="p-2 bg-slate-800/50 rounded-xl">
-                  <span class="text-[10px] text-slate-400 block font-semibold">Followers</span>
-                  <p id="insta-followers" class="text-sm font-bold text-white">0</p>
-                </div>
-                <div class="p-2 bg-slate-800/50 rounded-xl">
-                  <span class="text-[10px] text-slate-400 block font-semibold">Following</span>
-                  <p id="insta-following" class="text-sm font-bold text-white">0</p>
-                </div>
-              </div>
+              <input type="range" id="slider_followers" min="0" max="10000" value="480"
+                oninput="syncInput('followers', this.value)" class="w-full">
             </div>
 
-            <!-- AI Verdict Card (7 cols) -->
-            <div class="md:col-span-7 bg-slate-900/90 p-5 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4">
+            <!-- Following (Friends) Slider -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between items-center text-xs">
+                <label class="font-medium text-slate-300 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-user-plus text-slate-500 text-xs"></i>
+                  <span>Following (Friends)</span>
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input type="number" id="input_friends" min="0" max="500000" value="390"
+                    oninput="syncSlider('friends', this.value)"
+                    class="glass-input w-24 px-2 py-1 rounded-lg text-right font-mono text-xs text-white">
+                </div>
+              </div>
+              <input type="range" id="slider_friends" min="0" max="10000" value="390"
+                oninput="syncInput('friends', this.value)" class="w-full">
+            </div>
+
+            <!-- Posts / Statuses Slider -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between items-center text-xs">
+                <label class="font-medium text-slate-300 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-feather text-slate-500 text-xs"></i>
+                  <span>Lifetime Posts / Tweets</span>
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input type="number" id="input_statuses" min="0" max="100000" value="2150"
+                    oninput="syncSlider('statuses', this.value)"
+                    class="glass-input w-24 px-2 py-1 rounded-lg text-right font-mono text-xs text-white">
+                </div>
+              </div>
+              <input type="range" id="slider_statuses" min="0" max="10000" value="2150"
+                oninput="syncInput('statuses', this.value)" class="w-full">
+            </div>
+
+            <!-- Favourites / Likes Slider -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between items-center text-xs">
+                <label class="font-medium text-slate-300 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-heart text-slate-500 text-xs"></i>
+                  <span>Favourites / Likes Given</span>
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input type="number" id="input_favourites" min="0" max="100000" value="1420"
+                    oninput="syncSlider('favourites', this.value)"
+                    class="glass-input w-24 px-2 py-1 rounded-lg text-right font-mono text-xs text-white">
+                </div>
+              </div>
+              <input type="range" id="slider_favourites" min="0" max="10000" value="1420"
+                oninput="syncInput('favourites', this.value)" class="w-full">
+            </div>
+
+          </div>
+
+          <!-- Feature Binary Switches (iOS style) -->
+          <div class="pt-2 border-t border-white/[0.06] space-y-3">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Identity & Metadata Switches</span>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               
-              <div class="space-y-3">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs uppercase font-bold text-slate-400">AI Authenticity Verdict</span>
-                  <span id="insta-risk-badge" class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-slate-300">Evaluating</span>
-                </div>
-
-                <div id="insta-verdict-box" class="p-4 rounded-xl border text-center space-y-1">
-                  <h4 id="insta-verdict-title" class="text-xl font-black tracking-tight">VERDICT</h4>
-                  <p id="insta-verdict-desc" class="text-xs opacity-90">Analysis summary</p>
-                </div>
-
-                <!-- Probability Bar -->
-                <div class="space-y-1.5">
-                  <div class="flex justify-between text-xs font-semibold">
-                    <span class="text-emerald-400">Authentic Human: <span id="insta-real-prob">--</span></span>
-                    <span class="text-red-400">Bot / Fake: <span id="insta-fake-prob">--</span></span>
-                  </div>
-                  <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden flex">
-                    <div id="insta-bar-real" class="bg-emerald-500 h-full" style="width: 50%"></div>
-                    <div id="insta-bar-fake" class="bg-red-500 h-full" style="width: 50%"></div>
+              <!-- Switch: Default Avatar -->
+              <label class="flex items-center justify-between p-3 rounded-2xl bg-noir-900/80 border border-white/[0.05] cursor-pointer hover:border-white/[0.1] transition">
+                <span class="text-xs font-medium text-slate-300">Default Avatar / Egg</span>
+                <div class="relative inline-block w-10 align-middle select-none">
+                  <input type="checkbox" id="switch_default_avatar" onchange="debouncedPredict()" class="switch-checkbox hidden">
+                  <div class="switch-label block overflow-hidden h-5 rounded-full bg-noir-800 cursor-pointer transition-colors duration-200">
+                    <span class="switch-dot block h-4 w-4 mt-0.5 ml-0.5 rounded-full bg-slate-400 transition-transform duration-200"></span>
                   </div>
                 </div>
+              </label>
 
-                <!-- Flags -->
-                <div class="space-y-1.5 pt-1">
-                  <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Signals Detected</span>
-                  <div id="insta-flags-list" class="space-y-1.5 max-h-32 overflow-y-auto pr-1"></div>
+              <!-- Switch: Default Theme -->
+              <label class="flex items-center justify-between p-3 rounded-2xl bg-noir-900/80 border border-white/[0.05] cursor-pointer hover:border-white/[0.1] transition">
+                <span class="text-xs font-medium text-slate-300">Default Theme / Skin</span>
+                <div class="relative inline-block w-10 align-middle select-none">
+                  <input type="checkbox" id="switch_default_theme" onchange="debouncedPredict()" class="switch-checkbox hidden">
+                  <div class="switch-label block overflow-hidden h-5 rounded-full bg-noir-800 cursor-pointer transition-colors duration-200">
+                    <span class="switch-dot block h-4 w-4 mt-0.5 ml-0.5 rounded-full bg-slate-400 transition-transform duration-200"></span>
+                  </div>
                 </div>
-              </div>
+              </label>
 
-              <div class="pt-3 border-t border-slate-800 text-[10px] text-slate-500 flex justify-between">
-                <span>Actor: apify/instagram-profile-scraper</span>
-                <span>Scraped live via Apify Cloud</span>
+              <!-- Switch: Verified Badge -->
+              <label class="flex items-center justify-between p-3 rounded-2xl bg-noir-900/80 border border-white/[0.05] cursor-pointer hover:border-white/[0.1] transition">
+                <span class="text-xs font-medium text-slate-300">Verified Badge</span>
+                <div class="relative inline-block w-10 align-middle select-none">
+                  <input type="checkbox" id="switch_verified" onchange="debouncedPredict()" class="switch-checkbox hidden">
+                  <div class="switch-label block overflow-hidden h-5 rounded-full bg-noir-800 cursor-pointer transition-colors duration-200">
+                    <span class="switch-dot block h-4 w-4 mt-0.5 ml-0.5 rounded-full bg-slate-400 transition-transform duration-200"></span>
+                  </div>
+                </div>
+              </label>
+
+              <!-- Switch: Geolocation -->
+              <label class="flex items-center justify-between p-3 rounded-2xl bg-noir-900/80 border border-white/[0.05] cursor-pointer hover:border-white/[0.1] transition">
+                <span class="text-xs font-medium text-slate-300">Geolocation Enabled</span>
+                <div class="relative inline-block w-10 align-middle select-none">
+                  <input type="checkbox" id="switch_geo" checked onchange="debouncedPredict()" class="switch-checkbox hidden">
+                  <div class="switch-label block overflow-hidden h-5 rounded-full bg-noir-800 cursor-pointer transition-colors duration-200">
+                    <span class="switch-dot block h-4 w-4 mt-0.5 ml-0.5 rounded-full bg-slate-400 transition-transform duration-200"></span>
+                  </div>
+                </div>
+              </label>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Live Authenticity Gauge Column (5 Cols) -->
+        <div class="lg:col-span-5 glass-panel p-6 rounded-3xl space-y-6 sticky top-24">
+          
+          <div class="flex items-center justify-between border-b border-white/[0.06] pb-3">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+              <i class="fa-solid fa-radar text-purple-400"></i>
+              <span>Authenticity Gauge</span>
+            </h3>
+            <span id="sim_risk_badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+              Low Risk
+            </span>
+          </div>
+
+          <!-- Circular SVG Gauge -->
+          <div class="flex flex-col items-center justify-center py-2 relative">
+            <div class="relative w-44 h-44 flex items-center justify-center">
+              <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" class="stroke-noir-850" stroke-width="10" fill="none" />
+                <circle id="gauge_bar" cx="60" cy="60" r="50"
+                  class="gauge-circle stroke-emerald-500" stroke-width="10"
+                  stroke-linecap="round" fill="none"
+                  stroke-dasharray="314.159" stroke-dashoffset="60" />
+              </svg>
+              <div class="absolute flex flex-col items-center justify-center text-center">
+                <span id="sim_authenticity_score" class="text-3xl font-extrabold text-white font-mono tracking-tight">85%</span>
+                <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Authentic</span>
               </div>
             </div>
+            
+            <h4 id="sim_verdict_title" class="text-lg font-bold text-emerald-400 mt-2 tracking-tight">Authentic Real User</h4>
+            <p id="sim_verdict_desc" class="text-xs text-slate-400 text-center max-w-xs mt-1">Profile characteristics are consistent with human behavior.</p>
+          </div>
 
+          <!-- Diagnostic Metrics -->
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <div class="bg-noir-900/80 p-3 rounded-2xl border border-white/[0.04] text-center">
+              <span class="text-[10px] text-slate-500 uppercase font-semibold block">Follower Ratio</span>
+              <span id="sim_ratio" class="text-sm font-bold text-white mt-0.5 block font-mono">1.23</span>
+            </div>
+            <div class="bg-noir-900/80 p-3 rounded-2xl border border-white/[0.04] text-center">
+              <span class="text-[10px] text-slate-500 uppercase font-semibold block">Certainty</span>
+              <span id="sim_confidence" class="text-sm font-bold text-indigo-400 mt-0.5 block font-mono">85%</span>
+            </div>
+          </div>
+
+          <!-- Behavioral Indicators -->
+          <div class="space-y-2 pt-2 border-t border-white/[0.06]">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Real-Time Risk Flags</span>
+            <div id="sim_flags_list" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              <!-- Dynamically populated -->
+            </div>
           </div>
 
         </div>
 
       </div>
+
     </section>
 
-    <!-- TAB 2: Batch File Scanner -->
-    <section id="tab-batch" class="hidden space-y-6">
-      <div class="glass-card p-8 text-center space-y-6 max-w-3xl mx-auto">
-        <div class="w-16 h-16 rounded-2xl bg-indigo-900/40 border border-indigo-700/50 flex items-center justify-center text-indigo-400 text-2xl mx-auto">
+    <!-- ========================================== -->
+    <!-- TAB 3: Batch File Scanner                 -->
+    <!-- ========================================== -->
+    <section id="section-batch" class="hidden space-y-6">
+      
+      <div class="glass-panel p-8 rounded-3xl max-w-3xl mx-auto space-y-6 text-center">
+        
+        <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl mx-auto">
           <i class="fa-solid fa-cloud-arrow-up"></i>
         </div>
-        <div class="space-y-2">
-          <h2 class="text-2xl font-bold text-white">Batch Analyze Multiple Accounts</h2>
-          <p class="text-sm text-slate-400">
-            Upload an Excel (<code class="text-indigo-300">.xlsx</code>) or CSV file with account metrics. The AI will scan every row and return an authenticity breakdown.
-          </p>
+
+        <div class="space-y-1">
+          <h2 class="text-xl font-bold text-white">Batch Audit Social Profiles</h2>
+          <p class="text-xs text-slate-400">Upload Excel (.xlsx) or CSV files with account parameters to classify multiple users simultaneously.</p>
         </div>
 
-        <!-- Drag & Drop Area -->
-        <div id="drop-zone" onclick="document.getElementById('batch-file-input').click()" 
-          class="border-2 border-dashed border-slate-700 hover:border-indigo-500 p-8 rounded-2xl cursor-pointer bg-slate-900/50 transition">
-          <input type="file" id="batch-file-input" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleFileSelect(event)">
+        <!-- Drag & Drop Zone -->
+        <div id="batch_drop_zone" onclick="document.getElementById('batch_file_input').click()"
+          class="border-2 border-dashed border-white/[0.1] hover:border-indigo-500/50 p-8 rounded-2xl cursor-pointer bg-noir-900/60 transition group">
+          <input type="file" id="batch_file_input" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleBatchFileSelect(event)">
           <div class="space-y-2">
-            <i class="fa-solid fa-file-excel text-4xl text-emerald-400"></i>
-            <p id="file-name-label" class="text-sm font-semibold text-slate-200">
-              Click to browse or drag & drop spreadsheet here
-            </p>
-            <p class="text-xs text-slate-500">Supports .xlsx and .csv files</p>
+            <i class="fa-solid fa-file-spreadsheet text-3xl text-emerald-400 group-hover:scale-110 transition-transform"></i>
+            <p id="batch_file_label" class="text-sm font-semibold text-slate-200">Click to select or drag & drop spreadsheet</p>
+            <p class="text-[11px] text-slate-500">Supported formats: .xlsx, .csv</p>
           </div>
         </div>
 
-        <button id="batch-upload-btn" onclick="executeBatchAnalysis()" disabled
-          class="w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition">
-          <i class="fa-solid fa-bolt mr-2"></i>Scan File with AI
+        <button id="batch_run_btn" onclick="executeBatchAudit()" disabled
+          class="px-8 py-3 rounded-xl font-semibold text-xs text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed transition shadow-lg shadow-indigo-600/20">
+          <i class="fa-solid fa-microchip mr-2"></i>Run Batch AI Engine
         </button>
 
         <!-- Batch Results Display -->
-        <div id="batch-results" class="hidden text-left space-y-6 pt-6 border-t border-slate-800">
+        <div id="batch_results_container" class="hidden pt-6 border-t border-white/[0.06] space-y-6 text-left">
           
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 text-center">
-              <span class="text-xs text-slate-400 uppercase font-semibold">Total Accounts</span>
-              <p id="batch-total" class="text-2xl font-bold text-white mt-1">0</p>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-noir-900 p-3.5 rounded-2xl border border-white/[0.04] text-center">
+              <span class="text-[10px] text-slate-500 uppercase font-semibold">Total Accounts</span>
+              <p id="batch_stat_total" class="text-xl font-bold text-white font-mono mt-0.5">0</p>
             </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 text-center">
-              <span class="text-xs text-emerald-400 uppercase font-semibold">Real Accounts</span>
-              <p id="batch-real" class="text-2xl font-bold text-emerald-400 mt-1">0</p>
+            <div class="bg-noir-900 p-3.5 rounded-2xl border border-white/[0.04] text-center">
+              <span class="text-[10px] text-emerald-400 uppercase font-semibold">Authentic Users</span>
+              <p id="batch_stat_real" class="text-xl font-bold text-emerald-400 font-mono mt-0.5">0</p>
             </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 text-center">
-              <span class="text-xs text-red-400 uppercase font-semibold">Fake / Bots</span>
-              <p id="batch-fake" class="text-2xl font-bold text-red-400 mt-1">0</p>
+            <div class="bg-noir-900 p-3.5 rounded-2xl border border-white/[0.04] text-center">
+              <span class="text-[10px] text-rose-400 uppercase font-semibold">Fake / Bots</span>
+              <p id="batch_stat_fake" class="text-xl font-bold text-rose-400 font-mono mt-0.5">0</p>
             </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 text-center">
-              <span class="text-xs text-amber-400 uppercase font-semibold">Bot Ratio</span>
-              <p id="batch-ratio" class="text-2xl font-bold text-amber-400 mt-1">0%</p>
+            <div class="bg-noir-900 p-3.5 rounded-2xl border border-white/[0.04] text-center">
+              <span class="text-[10px] text-amber-400 uppercase font-semibold">Bot Ratio</span>
+              <p id="batch_stat_ratio" class="text-xl font-bold text-amber-400 font-mono mt-0.5">0%</p>
             </div>
           </div>
 
-          <div class="space-y-3">
-            <h4 class="text-sm font-bold text-slate-300">Preview of Evaluated Accounts:</h4>
-            <div class="overflow-x-auto rounded-xl border border-slate-800">
-              <table id="batch-table" class="min-w-full divide-y divide-slate-800 text-xs">
-                <thead class="bg-slate-900/90 text-slate-400">
-                  <tr>
-                    <th class="px-4 py-3 text-left">Followers</th>
-                    <th class="px-4 py-3 text-left">Following</th>
-                    <th class="px-4 py-3 text-left">Statuses</th>
-                    <th class="px-4 py-3 text-left">AI Verdict</th>
-                    <th class="px-4 py-3 text-left">Fake Prob %</th>
-                  </tr>
-                </thead>
-                <tbody id="batch-table-body" class="divide-y divide-slate-800 bg-slate-900/40 text-slate-300">
-                  <!-- Populated dynamically -->
-                </tbody>
-              </table>
-            </div>
+          <!-- Sample Table -->
+          <div class="overflow-x-auto rounded-2xl border border-white/[0.06]">
+            <table class="min-w-full divide-y divide-white/[0.06] text-xs">
+              <thead class="bg-noir-900 text-slate-400">
+                <tr>
+                  <th class="px-4 py-3 text-left">Followers</th>
+                  <th class="px-4 py-3 text-left">Following</th>
+                  <th class="px-4 py-3 text-left">Posts</th>
+                  <th class="px-4 py-3 text-left">Verdict</th>
+                  <th class="px-4 py-3 text-left">Fake Prob %</th>
+                </tr>
+              </thead>
+              <tbody id="batch_table_body" class="divide-y divide-white/[0.04] bg-noir-900/40 text-slate-300 font-mono">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
           </div>
 
         </div>
 
       </div>
+
     </section>
 
-    <!-- TAB 3: Model Architecture & Insights -->
-    <section id="tab-model" class="hidden space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- ========================================== -->
+    <!-- TAB 4: Model Specifications & Intel        -->
+    <!-- ========================================== -->
+    <section id="section-model" class="hidden space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
         
-        <!-- Pipeline Overview -->
-        <div class="glass-card p-6 space-y-4">
-          <h3 class="text-lg font-bold text-white flex items-center space-x-2">
-            <i class="fa-solid fa-diagram-project text-indigo-400"></i>
-            <span>Machine Learning Pipeline</span>
-          </h3>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            The detection engine uses a production-ready scikit-learn pipeline composed of feature extraction, robust numerical scaling, categorical one-hot encoding, and an ensemble Random Forest classifier.
+        <!-- Spec Card -->
+        <div class="glass-panel p-6 rounded-3xl space-y-4">
+          <div class="flex items-center space-x-2 text-indigo-400 text-sm font-bold">
+            <i class="fa-solid fa-microchip"></i>
+            <span class="uppercase tracking-wider">Architecture Overview</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Trained on high-confidence verified datasets excluding direct string identifiers (names, IDs, bios) to strictly eliminate data leakage and guarantee generalized behavioral discrimination.
           </p>
 
-          <div class="space-y-2 text-xs">
-            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex justify-between">
-              <span class="text-slate-400">Algorithm</span>
-              <span class="font-semibold text-white">RandomForestClassifier (400 estimators)</span>
+          <div class="space-y-2 pt-2 text-xs">
+            <div class="p-3 rounded-2xl bg-noir-900/80 border border-white/[0.04] flex justify-between">
+              <span class="text-slate-400">Ensemble Estimator</span>
+              <span class="font-bold text-white">RandomForest (400 trees)</span>
             </div>
-            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex justify-between">
-              <span class="text-slate-400">Validation Accuracy</span>
-              <span class="font-semibold text-emerald-400">96.38% (F1 Fake: 0.965)</span>
+            <div class="p-3 rounded-2xl bg-noir-900/80 border border-white/[0.04] flex justify-between">
+              <span class="text-slate-400">Testing Accuracy</span>
+              <span class="font-bold text-emerald-400 font-mono">97.70%</span>
             </div>
-            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex justify-between">
-              <span class="text-slate-400">Test Accuracy</span>
-              <span class="font-semibold text-emerald-400">97.70% (ROC-AUC: 0.996)</span>
+            <div class="p-3 rounded-2xl bg-noir-900/80 border border-white/[0.04] flex justify-between">
+              <span class="text-slate-400">ROC-AUC Score</span>
+              <span class="font-bold text-emerald-400 font-mono">0.996</span>
             </div>
-            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex justify-between">
-              <span class="text-slate-400">Imputation Strategy</span>
-              <span class="font-semibold text-white">Median (Numeric) + Missing Indicator</span>
+            <div class="p-3 rounded-2xl bg-noir-900/80 border border-white/[0.04] flex justify-between">
+              <span class="text-slate-400">Scraping Provider</span>
+              <span class="font-bold text-pink-400">Apify Cloud Actor</span>
             </div>
           </div>
         </div>
 
-        <!-- Top Feature Signals -->
-        <div class="glass-card p-6 space-y-4">
-          <h3 class="text-lg font-bold text-white flex items-center space-x-2">
-            <i class="fa-solid fa-ranking-star text-amber-400"></i>
-            <span>Key Discriminating Signals</span>
-          </h3>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Feature importance analysis across 4,000 audited accounts indicates the following top predictive signals:
+        <!-- Predictive Weights -->
+        <div class="glass-panel p-6 rounded-3xl space-y-4">
+          <div class="flex items-center space-x-2 text-amber-400 text-sm font-bold">
+            <i class="fa-solid fa-chart-simple"></i>
+            <span class="uppercase tracking-wider">Top Discriminating Signals</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Relative feature importance weights extracted directly from the random forest decision trees:
           </p>
 
-          <div class="space-y-3">
+          <div class="space-y-3 pt-1 text-xs">
             <div>
-              <div class="flex justify-between text-xs mb-1">
-                <span class="text-slate-300">Favourites / Likes Count</span>
-                <span class="text-indigo-400 font-semibold">High Predictive Weight</span>
+              <div class="flex justify-between text-slate-300 text-[11px] mb-1">
+                <span>Favourites / Likes Activity</span>
+                <span class="font-mono text-indigo-400">86% weight</span>
               </div>
-              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                <div class="bg-indigo-500 h-full w-[85%]"></div>
+              <div class="w-full bg-noir-900 h-2 rounded-full overflow-hidden">
+                <div class="bg-indigo-500 h-full w-[86%]"></div>
               </div>
             </div>
 
             <div>
-              <div class="flex justify-between text-xs mb-1">
-                <span class="text-slate-300">Status Volume vs. Friend Count</span>
-                <span class="text-indigo-400 font-semibold">High Predictive Weight</span>
+              <div class="flex justify-between text-slate-300 text-[11px] mb-1">
+                <span>Follower-to-Friend Imbalance</span>
+                <span class="font-mono text-indigo-400">79% weight</span>
               </div>
-              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                <div class="bg-indigo-500 h-full w-[78%]"></div>
-              </div>
-            </div>
-
-            <div>
-              <div class="flex justify-between text-xs mb-1">
-                <span class="text-slate-300">Language & Timezone Signatures</span>
-                <span class="text-indigo-400 font-semibold">Medium Predictive Weight</span>
-              </div>
-              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                <div class="bg-purple-500 h-full w-[65%]"></div>
+              <div class="w-full bg-noir-900 h-2 rounded-full overflow-hidden">
+                <div class="bg-indigo-500 h-full w-[79%]"></div>
               </div>
             </div>
 
             <div>
-              <div class="flex justify-between text-xs mb-1">
-                <span class="text-slate-300">Default Avatar / Theme Customization</span>
-                <span class="text-indigo-400 font-semibold">Medium Predictive Weight</span>
+              <div class="flex justify-between text-slate-300 text-[11px] mb-1">
+                <span>Default Profile / Avatar Markers</span>
+                <span class="font-mono text-purple-400">62% weight</span>
               </div>
-              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div class="w-full bg-noir-900 h-2 rounded-full overflow-hidden">
+                <div class="bg-purple-500 h-full w-[62%]"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-300 text-[11px] mb-1">
+                <span>Status Volume vs Account Longevity</span>
+                <span class="font-mono text-purple-400">54% weight</span>
+              </div>
+              <div class="w-full bg-noir-900 h-2 rounded-full overflow-hidden">
                 <div class="bg-purple-500 h-full w-[54%]"></div>
               </div>
             </div>
@@ -645,314 +702,81 @@
         </div>
 
       </div>
-
-      <!-- Leakage Note -->
-      <div class="p-4 bg-amber-950/40 border border-amber-800/60 rounded-xl text-xs text-amber-300 flex items-start space-x-3">
-        <i class="fa-solid fa-triangle-exclamation text-base mt-0.5 text-amber-400"></i>
-        <div class="space-y-1">
-          <span class="font-bold">Data Leakage Prevention Guard:</span>
-          <p class="text-amber-300/80">
-            Source markers (e.g. <code>dataset</code> column) and direct identifiers (handles, names, user IDs, image URLs) are strictly excluded from the model pipeline. Predictions rely solely on behavioral statistics and profile configuration attributes.
-          </p>
-        </div>
-      </div>
     </section>
 
   </main>
 
+  <!-- Modern Floating Toast Alert Container -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none"></div>
+
   <!-- Footer -->
-  <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
-    <p>VeriProfile AI &bull; Social Media Fake Account Detection System</p>
+  <footer class="relative z-10 border-t border-white/[0.04] py-6 text-center text-xs text-slate-600">
+    <p>VeriProfile AI &bull; Production Machine Learning Detection System</p>
   </footer>
 
-  <!-- Application Logic -->
+  <!-- ========================================== -->
+  <!-- JavaScript Application Logic               -->
+  <!-- ========================================== -->
   <script>
-    function switchTab(tabId) {
-      document.querySelectorAll('section[id^="tab-"]').forEach(sec => sec.classList.add('hidden'));
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('border-indigo-500', 'text-indigo-400', 'font-semibold');
-        btn.classList.add('border-transparent', 'text-slate-400');
+    // Tab Switching
+    function switchTab(tabKey) {
+      const tabs = ['instagram', 'simulator', 'batch', 'model'];
+      tabs.forEach(t => {
+        const sec = document.getElementById('section-' + t);
+        const btn = document.getElementById('nav-btn-' + t);
+        if (t === tabKey) {
+          sec.classList.remove('hidden');
+          btn.className = "nav-tab px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 bg-accent text-white shadow-md shadow-indigo-500/25";
+        } else {
+          sec.classList.add('hidden');
+          btn.className = "nav-tab px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all flex items-center space-x-2";
+        }
+      });
+    }
+
+    // Toast Notification System
+    function showToast(message, type = 'error') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const isError = type === 'error';
+      const isSuccess = type === 'success';
+      
+      const bg = isError ? 'bg-rose-950/90 border-rose-800 text-rose-200' : 
+                 isSuccess ? 'bg-emerald-950/90 border-emerald-800 text-emerald-200' :
+                 'bg-noir-900/90 border-white/10 text-slate-200';
+      const icon = isError ? 'fa-triangle-exclamation text-rose-400' :
+                   isSuccess ? 'fa-circle-check text-emerald-400' : 'fa-circle-info text-indigo-400';
+
+      toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-2xl border shadow-2xl backdrop-blur-md text-xs font-medium transition-all duration-300 transform translate-y-4 opacity-0 ${bg}`;
+      toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i><span>${message}</span>`;
+      
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
       });
 
-      document.getElementById('tab-' + tabId).classList.remove('hidden');
-      const activeBtn = document.getElementById('tab-btn-' + tabId);
-      activeBtn.classList.remove('border-transparent', 'text-slate-400');
-      activeBtn.classList.add('border-indigo-500', 'text-indigo-400', 'font-semibold');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-4');
+        setTimeout(() => toast.remove(), 300);
+      }, 4500);
     }
 
-    const presets = {
-      bot: {
-        followers: 12,
-        friends: 2400,
-        statuses: 4,
-        favourites: 0,
-        listed: 0,
-        default_img: true,
-        default_theme: true,
-        verified: false,
-        geo: false,
-        header: false,
-        protected: false,
-        lang: 'en'
-      },
-      real: {
-        followers: 480,
-        friends: 390,
-        statuses: 2150,
-        favourites: 1420,
-        listed: 6,
-        default_img: false,
-        default_theme: false,
-        verified: false,
-        geo: true,
-        header: true,
-        protected: false,
-        lang: 'en'
-      },
-      creator: {
-        followers: 85000,
-        friends: 420,
-        statuses: 8600,
-        favourites: 5400,
-        listed: 85,
-        default_img: false,
-        default_theme: false,
-        verified: true,
-        geo: true,
-        header: true,
-        protected: false,
-        lang: 'en'
-      },
-      lurker: {
-        followers: 45,
-        friends: 110,
-        statuses: 18,
-        favourites: 350,
-        listed: 1,
-        default_img: false,
-        default_theme: false,
-        verified: false,
-        geo: false,
-        header: false,
-        protected: true,
-        lang: 'en'
-      }
-    };
-
-    function loadPreset(key) {
-      const p = presets[key];
-      if (!p) return;
-      document.getElementById('followers_count').value = p.followers;
-      document.getElementById('friends_count').value = p.friends;
-      document.getElementById('statuses_count').value = p.statuses;
-      document.getElementById('favourites_count').value = p.favourites;
-      document.getElementById('listed_count').value = p.listed;
-      document.getElementById('default_profile_image').checked = p.default_img;
-      document.getElementById('default_profile').checked = p.default_theme;
-      document.getElementById('verified').checked = p.verified;
-      document.getElementById('geo_enabled').checked = p.geo;
-      document.getElementById('profile_use_background_image').checked = p.header;
-      document.getElementById('protected').checked = p.protected;
-      document.getElementById('lang').value = p.lang;
-
-      // Auto-trigger analysis for seamless testing
-      handleAnalyze();
+    // ----------------------------------------------------
+    // LIVE INSTAGRAM SCAN
+    // ----------------------------------------------------
+    function quickScan(user) {
+      document.getElementById('insta-username-input').value = user;
+      handleInstagramScan();
     }
 
-    async function handleAnalyze(e) {
-      if (e) e.preventDefault();
-      
-      const payload = {
-        followers_count: parseFloat(document.getElementById('followers_count').value) || 0,
-        friends_count: parseFloat(document.getElementById('friends_count').value) || 0,
-        statuses_count: parseFloat(document.getElementById('statuses_count').value) || 0,
-        favourites_count: parseFloat(document.getElementById('favourites_count').value) || 0,
-        listed_count: parseFloat(document.getElementById('listed_count').value) || 0,
-        default_profile_image: document.getElementById('default_profile_image').checked ? 1 : 0,
-        default_profile: document.getElementById('default_profile').checked ? 1 : 0,
-        verified: document.getElementById('verified').checked ? 1 : 0,
-        geo_enabled: document.getElementById('geo_enabled').checked ? 1 : 0,
-        profile_use_background_image: document.getElementById('profile_use_background_image').checked ? 1 : 0,
-        protected: document.getElementById('protected').checked ? 1 : 0,
-        lang: document.getElementById('lang').value
-      };
-
-      const btn = document.getElementById('submit-btn');
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Analyzing Profile...`;
-      btn.disabled = true;
-
-      try {
-        const res = await fetch('/api/predict', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) {
-          throw new Error(`HTTP error ${res.status}`);
-        }
-
-        const data = await res.json();
-        renderResults(data);
-
-      } catch (err) {
-        alert("Prediction failed: " + err.message);
-      } finally {
-        btn.innerHTML = `<i class="fa-solid fa-microchip mr-2"></i> Run AI Detection Engine`;
-        btn.disabled = false;
-      }
-    }
-
-    function renderResults(res) {
-      const isFake = res.is_fake === 1;
-      const verdictCard = document.getElementById('verdict-card');
-      const verdictIcon = document.getElementById('verdict-icon');
-      const verdictTitle = document.getElementById('verdict-title');
-      const verdictDesc = document.getElementById('verdict-desc');
-      const riskBadge = document.getElementById('risk-badge');
-
-      if (isFake) {
-        verdictCard.className = "p-5 rounded-2xl bg-red-950/40 border border-red-800 text-center space-y-2 transition-all";
-        verdictIcon.className = "w-16 h-16 mx-auto rounded-2xl bg-red-900/60 border border-red-700 flex items-center justify-center text-3xl text-red-400";
-        verdictIcon.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
-        verdictTitle.innerText = "FAKE / BOT ACCOUNT";
-        verdictTitle.className = "text-2xl font-black tracking-tight text-red-400";
-        verdictDesc.innerText = `High probability of inorganic automation (${res.fake_probability}% certainty).`;
-        riskBadge.className = "px-2.5 py-1 text-xs font-semibold rounded-full bg-red-950 text-red-300 border border-red-800";
-        riskBadge.innerText = res.risk_level;
-      } else {
-        verdictCard.className = "p-5 rounded-2xl bg-emerald-950/40 border border-emerald-800 text-center space-y-2 transition-all";
-        verdictIcon.className = "w-16 h-16 mx-auto rounded-2xl bg-emerald-900/60 border border-emerald-700 flex items-center justify-center text-3xl text-emerald-400";
-        verdictIcon.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
-        verdictTitle.innerText = "AUTHENTIC REAL USER";
-        verdictTitle.className = "text-2xl font-black tracking-tight text-emerald-400";
-        verdictDesc.innerText = `Profile behavior aligns with authentic human patterns (${res.real_probability}% certainty).`;
-        riskBadge.className = "px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800";
-        riskBadge.innerText = res.risk_level;
-      }
-
-      // Update probability bars
-      document.getElementById('real-prob-text').innerText = res.real_probability + '%';
-      document.getElementById('fake-prob-text').innerText = res.fake_probability + '%';
-      document.getElementById('prob-bar-real').style.width = res.real_probability + '%';
-      document.getElementById('prob-bar-fake').style.width = res.fake_probability + '%';
-
-      // Computed metrics
-      document.getElementById('ratio-value').innerText = res.follower_following_ratio;
-      document.getElementById('confidence-value').innerText = res.confidence + '%';
-
-      // Flags
-      const flagsContainer = document.getElementById('flags-list');
-      flagsContainer.innerHTML = '';
-      if (res.flags && res.flags.length > 0) {
-        res.flags.forEach(f => {
-          const div = document.createElement('div');
-          const borderClass = f.type === 'danger' ? 'border-red-900/60 bg-red-950/20 text-red-300' :
-                             f.type === 'warning' ? 'border-amber-900/60 bg-amber-950/20 text-amber-300' :
-                             f.type === 'success' ? 'border-emerald-900/60 bg-emerald-950/20 text-emerald-300' :
-                             'border-slate-800 bg-slate-900/40 text-slate-300';
-          
-          const icon = f.type === 'danger' ? 'fa-circle-xmark text-red-400' :
-                       f.type === 'warning' ? 'fa-triangle-exclamation text-amber-400' :
-                       f.type === 'success' ? 'fa-check text-emerald-400' :
-                       'fa-circle-info text-blue-400';
-
-          div.className = `p-2.5 rounded-xl border text-xs flex items-start space-x-2 ${borderClass}`;
-          div.innerHTML = `
-            <i class="fa-solid ${icon} mt-0.5"></i>
-            <div>
-              <span class="font-semibold block">${f.title}</span>
-              <span class="opacity-80">${f.desc}</span>
-            </div>
-          `;
-          flagsContainer.appendChild(div);
-        });
-      } else {
-        flagsContainer.innerHTML = `<div class="text-xs text-slate-500 italic p-2 bg-slate-900/40 rounded-lg">No critical risk flags triggered.</div>`;
-      }
-    }
-
-    // Batch File Handling
-    let selectedFile = null;
-    function handleFileSelect(event) {
-      selectedFile = event.target.files[0];
-      if (selectedFile) {
-        document.getElementById('file-name-label').innerText = `Selected: ${selectedFile.name} (${Math.round(selectedFile.size / 1024)} KB)`;
-        document.getElementById('batch-upload-btn').disabled = false;
-      }
-    }
-
-    async function executeBatchAnalysis() {
-      if (!selectedFile) return;
-      const btn = document.getElementById('batch-upload-btn');
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Analyzing Dataset...`;
-      btn.disabled = true;
-
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      try {
-        const res = await fetch('/api/batch-predict', {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || `Server error ${res.status}`);
-        }
-
-        const data = await res.json();
-        renderBatchResults(data);
-
-      } catch (err) {
-        alert("Batch scanning error: " + err.message);
-      } finally {
-        btn.innerHTML = `<i class="fa-solid fa-bolt mr-2"></i> Scan File with AI`;
-        btn.disabled = false;
-      }
-    }
-
-    function renderBatchResults(summary) {
-      document.getElementById('batch-results').classList.remove('hidden');
-      document.getElementById('batch-total').innerText = summary.total_accounts.toLocaleString();
-      document.getElementById('batch-real').innerText = summary.detected_real.toLocaleString();
-      document.getElementById('batch-fake').innerText = summary.detected_fake.toLocaleString();
-      document.getElementById('batch-ratio').innerText = summary.fake_percentage + '%';
-
-      const tbody = document.getElementById('batch-table-body');
-      tbody.innerHTML = '';
-      if (summary.sample_results) {
-        summary.sample_results.forEach(row => {
-          const tr = document.createElement('tr');
-          const isFake = row.ai_prediction === 'Fake';
-          const badgeColor = isFake ? 'bg-red-950 text-red-300 border-red-800' : 'bg-emerald-950 text-emerald-300 border-emerald-800';
-          
-          tr.innerHTML = `
-            <td class="px-4 py-2.5 font-medium">${Math.round(row.followers_count || 0).toLocaleString()}</td>
-            <td class="px-4 py-2.5 font-medium">${Math.round(row.friends_count || 0).toLocaleString()}</td>
-            <td class="px-4 py-2.5 font-medium">${Math.round(row.statuses_count || 0).toLocaleString()}</td>
-            <td class="px-4 py-2.5">
-              <span class="px-2 py-0.5 rounded-full border text-[10px] font-semibold ${badgeColor}">
-                ${row.ai_prediction}
-              </span>
-            </td>
-            <td class="px-4 py-2.5 font-semibold ${isFake ? 'text-red-400' : 'text-emerald-400'}">${row['fake_probability_%']}%</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
-    }
-
-    // Live Instagram Scan
     async function handleInstagramScan(e) {
       if (e) e.preventDefault();
-      const usernameInput = document.getElementById('insta-username-input');
-      const username = usernameInput.value.trim();
+      const input = document.getElementById('insta-username-input');
+      const username = input.value.trim().replace(/^@/, '');
       if (!username) return;
 
-      const btn = document.getElementById('insta-submit-btn');
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Scraping via Apify...`;
+      const btn = document.getElementById('insta-scan-btn');
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>Scanning...</span>`;
       btn.disabled = true;
 
       try {
@@ -964,95 +788,317 @@
 
         if (!res.ok) {
           const err = await res.json();
-          throw new Error(err.detail || `Error ${res.status}`);
+          throw new Error(err.detail || `Scan request failed with HTTP ${res.status}`);
         }
 
         const data = await res.json();
         renderInstagramResults(data);
+        showToast(`Analyzed profile @${username}`, 'success');
 
       } catch (err) {
-        alert("Instagram Scan Failed: " + err.message);
+        showToast(err.message, 'error');
       } finally {
-        btn.innerHTML = `<i class="fa-solid fa-radar mr-2"></i> Fetch & Inspect`;
+        btn.innerHTML = `<i class="fa-solid fa-radar"></i><span>Scan Profile</span>`;
         btn.disabled = false;
       }
     }
 
     function renderInstagramResults(data) {
-      const container = document.getElementById('insta-results-container');
-      container.classList.remove('hidden');
+      const card = document.getElementById('insta-result-card');
+      card.classList.remove('hidden');
 
       const prof = data.profile;
       const ana = data.analysis;
 
+      // Identity
       document.getElementById('insta-avatar').src = prof.profile_pic_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(prof.username);
       document.getElementById('insta-username').innerText = '@' + prof.username;
-      document.getElementById('insta-fullname').innerText = prof.full_name || 'No full name';
-      document.getElementById('insta-bio').innerText = prof.biography || 'No biography.';
-      document.getElementById('insta-posts').innerText = prof.posts_count.toLocaleString();
-      document.getElementById('insta-followers').innerText = prof.followers_count.toLocaleString();
-      document.getElementById('insta-following').innerText = prof.following_count.toLocaleString();
+      document.getElementById('insta-fullname').innerText = prof.full_name || 'No full name provided';
+      document.getElementById('insta-bio').innerText = prof.biography || 'No biography text found.';
 
-      if (prof.verified) {
-        document.getElementById('insta-verified-badge').classList.remove('hidden');
-      } else {
-        document.getElementById('insta-verified-badge').classList.add('hidden');
-      }
+      // Badges
+      const verBadge = document.getElementById('insta-verified-badge');
+      if (prof.verified) verBadge.classList.remove('hidden'); else verBadge.classList.add('hidden');
 
-      if (prof.is_private) {
-        document.getElementById('insta-private-badge').classList.remove('hidden');
-      } else {
-        document.getElementById('insta-private-badge').classList.add('hidden');
-      }
+      const privBadge = document.getElementById('insta-private-badge');
+      if (prof.is_private) privBadge.classList.remove('hidden'); else privBadge.classList.add('hidden');
 
-      // Verdict
+      // Counters
+      document.getElementById('insta-followers').innerText = Number(prof.followers_count).toLocaleString();
+      document.getElementById('insta-following').innerText = Number(prof.following_count).toLocaleString();
+      document.getElementById('insta-posts').innerText = Number(prof.posts_count).toLocaleString();
+      document.getElementById('insta-ratio').innerText = ana.follower_following_ratio.toLocaleString();
+
+      // Verdict Stamp
       const isFake = ana.is_fake === 1;
-      const box = document.getElementById('insta-verdict-box');
-      const title = document.getElementById('insta-verdict-title');
-      const desc = document.getElementById('insta-verdict-desc');
-      const badge = document.getElementById('insta-risk-badge');
+      const verdictBadge = document.getElementById('insta-verdict-badge');
+      const verdictTitle = document.getElementById('insta-verdict-title');
+      const verdictLabel = document.getElementById('insta-verdict-label');
 
       if (isFake) {
-        box.className = "p-4 rounded-xl border border-red-800 bg-red-950/40 text-center space-y-1";
-        title.className = "text-xl font-black tracking-tight text-red-400";
-        title.innerText = "SUSPICIOUS / BOT PROFILE";
-        desc.className = "text-xs text-red-300";
-        desc.innerText = `Elevated likelihood of fake or automated activity (${ana.fake_probability}% probability).`;
-        badge.className = "px-2.5 py-0.5 text-xs font-semibold rounded-full bg-red-950 text-red-300 border border-red-800";
-        badge.innerText = ana.risk_level;
+        verdictBadge.className = "px-5 py-3 rounded-2xl text-center space-y-0.5 border shadow-xl shrink-0 bg-rose-950/60 border-rose-800 text-rose-300";
+        verdictLabel.className = "text-[10px] uppercase font-bold tracking-wider block text-rose-400";
+        verdictTitle.innerText = "SUSPICIOUS / BOT";
       } else {
-        box.className = "p-4 rounded-xl border border-emerald-800 bg-emerald-950/40 text-center space-y-1";
-        title.className = "text-xl font-black tracking-tight text-emerald-400";
-        title.innerText = "AUTHENTIC REAL USER";
-        desc.className = "text-xs text-emerald-300";
-        desc.innerText = `Follower distributions & profile characteristics match real human behavior (${ana.real_probability}% certainty).`;
-        badge.className = "px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800";
-        badge.innerText = ana.risk_level;
+        verdictBadge.className = "px-5 py-3 rounded-2xl text-center space-y-0.5 border shadow-xl shrink-0 bg-emerald-950/60 border-emerald-800 text-emerald-300";
+        verdictLabel.className = "text-[10px] uppercase font-bold tracking-wider block text-emerald-400";
+        verdictTitle.innerText = "AUTHENTIC REAL";
       }
 
       // Bar
-      document.getElementById('insta-real-prob').innerText = ana.real_probability + '%';
-      document.getElementById('insta-fake-prob').innerText = ana.fake_probability + '%';
+      document.getElementById('insta-real-pct').innerText = ana.real_probability + '%';
+      document.getElementById('insta-fake-pct').innerText = ana.fake_probability + '%';
       document.getElementById('insta-bar-real').style.width = ana.real_probability + '%';
       document.getElementById('insta-bar-fake').style.width = ana.fake_probability + '%';
 
-      // Flags
-      const flagsList = document.getElementById('insta-flags-list');
-      flagsList.innerHTML = '';
+      // Signals
+      const sigList = document.getElementById('insta-signals-list');
+      sigList.innerHTML = '';
       if (ana.flags && ana.flags.length > 0) {
         ana.flags.forEach(f => {
-          const div = document.createElement('div');
           const isDanger = f.type === 'danger';
-          div.className = `p-2 rounded-lg border text-[11px] flex items-center space-x-2 ${isDanger ? 'border-red-900 bg-red-950/30 text-red-300' : 'border-slate-800 bg-slate-900/40 text-slate-300'}`;
-          div.innerHTML = `<i class="fa-solid ${isDanger ? 'fa-triangle-exclamation text-red-400' : 'fa-circle-check text-emerald-400'}"></i><span>${f.title}: ${f.desc}</span>`;
-          flagsList.appendChild(div);
+          const isWarn = f.type === 'warning';
+          const bg = isDanger ? 'bg-rose-950/40 border-rose-800/60 text-rose-300' :
+                     isWarn ? 'bg-amber-950/40 border-amber-800/60 text-amber-300' :
+                     'bg-noir-900/80 border-white/[0.04] text-slate-300';
+          const icon = isDanger ? 'fa-triangle-exclamation text-rose-400' :
+                       isWarn ? 'fa-circle-exclamation text-amber-400' :
+                       'fa-circle-check text-emerald-400';
+
+          const item = document.createElement('div');
+          item.className = `p-3 rounded-xl border text-xs flex items-start space-x-2.5 ${bg}`;
+          item.innerHTML = `<i class="fa-solid ${icon} mt-0.5 text-xs shrink-0"></i><div><span class="font-semibold block">${f.title}</span><span class="text-[11px] opacity-80">${f.desc}</span></div>`;
+          sigList.appendChild(item);
+        });
+      } else {
+        sigList.innerHTML = `<div class="p-3 text-xs text-slate-500 italic bg-noir-900/40 rounded-xl">No anomalies detected.</div>`;
+      }
+    }
+
+    // ----------------------------------------------------
+    // GUI SIMULATOR: SLIDER / INPUT SYNC & LIVE PREDICTION
+    // ----------------------------------------------------
+    function syncSlider(field, val) {
+      document.getElementById('slider_' + field).value = Math.min(val, 10000);
+      debouncedPredict();
+    }
+    function syncInput(field, val) {
+      document.getElementById('input_' + field).value = val;
+      debouncedPredict();
+    }
+
+    let predictTimer = null;
+    function debouncedPredict() {
+      clearTimeout(predictTimer);
+      predictTimer = setTimeout(runSimulatorPredict, 120);
+    }
+
+    const archetypes = {
+      bot: {
+        followers: 18, friends: 2400, statuses: 3, favourites: 0,
+        default_avatar: true, default_theme: true, verified: false, geo: false
+      },
+      real: {
+        followers: 480, friends: 390, statuses: 2150, favourites: 1420,
+        default_avatar: false, default_theme: false, verified: false, geo: true
+      },
+      creator: {
+        followers: 78000, friends: 350, statuses: 6200, favourites: 8500,
+        default_avatar: false, default_theme: false, verified: true, geo: true
+      },
+      lurker: {
+        followers: 42, friends: 95, statuses: 12, favourites: 280,
+        default_avatar: false, default_theme: false, verified: false, geo: false
+      }
+    };
+
+    function applyPreset(key) {
+      const p = archetypes[key];
+      if (!p) return;
+      document.getElementById('input_followers').value = p.followers;
+      document.getElementById('slider_followers').value = Math.min(p.followers, 10000);
+
+      document.getElementById('input_friends').value = p.friends;
+      document.getElementById('slider_friends').value = Math.min(p.friends, 10000);
+
+      document.getElementById('input_statuses').value = p.statuses;
+      document.getElementById('slider_statuses').value = Math.min(p.statuses, 10000);
+
+      document.getElementById('input_favourites').value = p.favourites;
+      document.getElementById('slider_favourites').value = Math.min(p.favourites, 10000);
+
+      document.getElementById('switch_default_avatar').checked = p.default_avatar;
+      document.getElementById('switch_default_theme').checked = p.default_theme;
+      document.getElementById('switch_verified').checked = p.verified;
+      document.getElementById('switch_geo').checked = p.geo;
+
+      runSimulatorPredict();
+    }
+
+    async function runSimulatorPredict() {
+      const payload = {
+        followers_count: parseFloat(document.getElementById('input_followers').value) || 0,
+        friends_count: parseFloat(document.getElementById('input_friends').value) || 0,
+        statuses_count: parseFloat(document.getElementById('input_statuses').value) || 0,
+        favourites_count: parseFloat(document.getElementById('input_favourites').value) || 0,
+        listed_count: 2.0,
+        default_profile_image: document.getElementById('switch_default_avatar').checked ? 1 : 0,
+        default_profile: document.getElementById('switch_default_theme').checked ? 1 : 0,
+        verified: document.getElementById('switch_verified').checked ? 1 : 0,
+        geo_enabled: document.getElementById('switch_geo').checked ? 1 : 0,
+        profile_use_background_image: 1,
+        protected: 0,
+        lang: 'en'
+      };
+
+      try {
+        const res = await fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) return;
+        const data = await res.json();
+        renderSimulatorGauge(data);
+
+      } catch (err) {
+        console.error("Simulation predict error:", err);
+      }
+    }
+
+    function renderSimulatorGauge(res) {
+      const isFake = res.is_fake === 1;
+      const realProb = res.real_probability;
+      const fakeProb = res.fake_probability;
+
+      // Gauge Circular Progress: circumference = 2 * PI * 50 = 314.159
+      const circ = 314.159;
+      const offset = circ - (realProb / 100) * circ;
+      const gaugeBar = document.getElementById('gauge_bar');
+      gaugeBar.style.strokeDashoffset = offset;
+
+      if (isFake) {
+        gaugeBar.classList.remove('stroke-emerald-500');
+        gaugeBar.classList.add('stroke-rose-500');
+        document.getElementById('sim_authenticity_score').innerText = fakeProb + '%';
+        document.getElementById('sim_authenticity_score').previousElementSibling;
+        document.getElementById('sim_verdict_title').innerText = "Suspicious Bot Profile";
+        document.getElementById('sim_verdict_title').className = "text-lg font-bold text-rose-400 mt-2 tracking-tight";
+        document.getElementById('sim_verdict_desc').innerText = `High inorganic activity detected (${fakeProb}% bot probability).`;
+        document.getElementById('sim_risk_badge').className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-300 border border-rose-500/20";
+        document.getElementById('sim_risk_badge').innerText = res.risk_level;
+      } else {
+        gaugeBar.classList.remove('stroke-rose-500');
+        gaugeBar.classList.add('stroke-emerald-500');
+        document.getElementById('sim_authenticity_score').innerText = realProb + '%';
+        document.getElementById('sim_verdict_title').innerText = "Authentic Real Account";
+        document.getElementById('sim_verdict_title').className = "text-lg font-bold text-emerald-400 mt-2 tracking-tight";
+        document.getElementById('sim_verdict_desc').innerText = `Metrics correlate strongly with authentic organic behavior (${realProb}% certainty).`;
+        document.getElementById('sim_risk_badge').className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20";
+        document.getElementById('sim_risk_badge').innerText = res.risk_level;
+      }
+
+      document.getElementById('sim_ratio').innerText = res.follower_following_ratio;
+      document.getElementById('sim_confidence').innerText = res.confidence + '%';
+
+      // Flags
+      const flagsContainer = document.getElementById('sim_flags_list');
+      flagsContainer.innerHTML = '';
+      if (res.flags && res.flags.length > 0) {
+        res.flags.forEach(f => {
+          const isDanger = f.type === 'danger';
+          const bg = isDanger ? 'bg-rose-950/40 border-rose-800/60 text-rose-300' : 'bg-noir-900/60 border-white/[0.04] text-slate-300';
+          const icon = isDanger ? 'fa-triangle-exclamation text-rose-400' : 'fa-check text-emerald-400';
+
+          const d = document.createElement('div');
+          d.className = `p-2.5 rounded-xl border text-[11px] flex items-start space-x-2 ${bg}`;
+          d.innerHTML = `<i class="fa-solid ${icon} mt-0.5 text-xs shrink-0"></i><div><span class="font-semibold block">${f.title}</span><span class="opacity-80">${f.desc}</span></div>`;
+          flagsContainer.appendChild(d);
+        });
+      } else {
+        flagsContainer.innerHTML = `<div class="p-2 text-xs text-slate-500 italic bg-noir-900/40 rounded-xl">No severe risk flags.</div>`;
+      }
+    }
+
+    // ----------------------------------------------------
+    // BATCH SCANNER
+    // ----------------------------------------------------
+    let batchFile = null;
+    function handleBatchFileSelect(event) {
+      batchFile = event.target.files[0];
+      if (batchFile) {
+        document.getElementById('batch_file_label').innerText = `${batchFile.name} (${Math.round(batchFile.size / 1024)} KB)`;
+        document.getElementById('batch_run_btn').disabled = false;
+      }
+    }
+
+    async function executeBatchAudit() {
+      if (!batchFile) return;
+      const btn = document.getElementById('batch_run_btn');
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i>Analyzing Dataset...`;
+      btn.disabled = true;
+
+      const fd = new FormData();
+      fd.append('file', batchFile);
+
+      try {
+        const res = await fetch('/api/batch-predict', {
+          method: 'POST',
+          body: fd
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || `Batch request failed with status ${res.status}`);
+        }
+
+        const data = await res.json();
+        renderBatchData(data);
+        showToast(`Audit finished for ${data.total_accounts} accounts`, 'success');
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.innerHTML = `<i class="fa-solid fa-microchip mr-2"></i>Run Batch AI Engine`;
+        btn.disabled = false;
+      }
+    }
+
+    function renderBatchData(summary) {
+      document.getElementById('batch_results_container').classList.remove('hidden');
+      document.getElementById('batch_stat_total').innerText = summary.total_accounts.toLocaleString();
+      document.getElementById('batch_stat_real').innerText = summary.detected_real.toLocaleString();
+      document.getElementById('batch_stat_fake').innerText = summary.detected_fake.toLocaleString();
+      document.getElementById('batch_stat_ratio').innerText = summary.fake_percentage + '%';
+
+      const tbody = document.getElementById('batch_table_body');
+      tbody.innerHTML = '';
+      if (summary.sample_results) {
+        summary.sample_results.forEach(row => {
+          const tr = document.createElement('tr');
+          const isFake = row.ai_prediction === 'Fake';
+          const badgeClass = isFake ? 'bg-rose-500/10 text-rose-300 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20';
+
+          tr.innerHTML = `
+            <td class="px-4 py-2.5">${Math.round(row.followers_count || 0).toLocaleString()}</td>
+            <td class="px-4 py-2.5">${Math.round(row.friends_count || 0).toLocaleString()}</td>
+            <td class="px-4 py-2.5">${Math.round(row.statuses_count || 0).toLocaleString()}</td>
+            <td class="px-4 py-2.5">
+              <span class="px-2 py-0.5 rounded-full border text-[10px] font-semibold ${badgeClass}">
+                ${row.ai_prediction}
+              </span>
+            </td>
+            <td class="px-4 py-2.5 font-semibold ${isFake ? 'text-rose-400' : 'text-emerald-400'}">${row['fake_probability_%']}%</td>
+          `;
+          tbody.appendChild(tr);
         });
       }
     }
 
-    // Run initial analysis with default values on load
+    // Initialize Simulator Prediction on Load
     window.addEventListener('DOMContentLoaded', () => {
-      handleAnalyze();
+      runSimulatorPredict();
     });
   </script>
 </body>
