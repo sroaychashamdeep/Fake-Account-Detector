@@ -67,16 +67,16 @@ class AccountInput(BaseModel):
     # Boolean flags (0 or 1)
     default_profile: int = Field(default=0, description="1 if default theme is active, else 0")
     default_profile_image: int = Field(default=0, description="1 if default avatar/egg image is active, else 0")
-    geo_enabled: int = Field(default=1, description="1 if geolocation is enabled, else 0")
+    geo_enabled: Optional[int] = Field(default=None, description="1 if geolocation is enabled, else 0")
     verified: int = Field(default=0, description="1 if account is verified, else 0")
     protected: int = Field(default=0, description="1 if account is private/protected, else 0")
-    profile_use_background_image: int = Field(default=1, description="1 if profile uses background image, else 0")
-    profile_background_tile: int = Field(default=0, description="1 if profile background is tiled, else 0")
+    profile_use_background_image: Optional[int] = Field(default=None, description="1 if profile uses background image, else 0")
+    profile_background_tile: Optional[int] = Field(default=None, description="1 if profile background is tiled, else 0")
 
     # Optional metadata
-    lang: Optional[str] = Field(default="en", description="Language code (e.g., en, it, es)")
+    lang: Optional[str] = Field(default=None, description="Language code (e.g., en, it, es)")
     time_zone: Optional[str] = Field(default=None, description="Timezone string")
-    utc_offset: Optional[float] = Field(default=0.0, description="UTC offset in seconds")
+    utc_offset: Optional[float] = Field(default=None, description="UTC offset in seconds")
 
     # Optional metadata & profile signals
     name: Optional[str] = Field(default=None, description="Display name")
